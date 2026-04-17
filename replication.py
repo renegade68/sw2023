@@ -2,10 +2,10 @@
 replication.py — Standalone replication script for:
 
   Lee, C. (2025). sw2023: Nonparametric Multiple-Output Stochastic
-  Frontier Analysis in Python. Journal of Statistical Software, XX(YY).
+  Frontier Analysis in Python. Manuscript submitted for publication.
 
-Reproduces all numerical results reported in the manuscript.
-Tested with: Python 3.10, numpy 1.26, scipy 1.14, pandas 2.2, sw2023 0.3.0
+Reproduces all numerical results reported in the accompanying manuscript.
+Tested with: Python 3.10, numpy 1.26, scipy 1.14, pandas 2.2, sw2023 0.3.2
 
 Runtime:
   Default (--quick) : < 5 minutes  (n_sims=20 for Monte Carlo)
@@ -26,7 +26,7 @@ N_SIMS = 100 if FULL else 20
 print("=" * 65)
 print("sw2023 JSS Replication Script")
 if FULL:
-    print("  Mode: FULL (n_sims=100) — reproduces paper Table 1 exactly")
+    print("  Mode: FULL (n_sims=100) — reproduces manuscript Table 1 exactly")
 else:
     print("  Mode: QUICK (n_sims=20) — for fast verification")
     print("  Run with --full for exact Table 1 replication (~30 min)")
@@ -45,7 +45,7 @@ print(f"pandas version : {pd.__version__}")
 
 # ── Import public API ─────────────────────────────────────────────────────────
 from sw2023 import (SW2023Model, bootstrap_sw, test_r3_significance,
-                    bandwidth_loocv)
+                    bandwidth_loocv, bandwidth_loocv_product)
 
 # =============================================================================
 # Section 5: Monte Carlo Validation (Table 1)
@@ -79,9 +79,15 @@ except Exception as e:
 import os
 csv_path = os.path.join(os.path.dirname(__file__), "mc_imse_results.csv")
 if os.path.exists(csv_path):
-    print("\n-- Pre-computed results (n_sims=100, paper Table 1) --")
+    print("\n-- Pre-computed results (n_sims=100, paper Table 1 — scalar LOO-CV) --")
     ref = pd.read_csv(csv_path)
     print(ref.to_string(index=False))
+
+product_csv = os.path.join(os.path.dirname(__file__), "mc_imse_product.csv")
+if os.path.exists(product_csv):
+    print("\n-- Pre-computed results (n_sims=100, product LOO-CV — paper Table 2) --")
+    prd = pd.read_csv(product_csv)
+    print(prd.to_string(index=False))
 
 # =============================================================================
 # Section 6: Simulation-Based Illustration

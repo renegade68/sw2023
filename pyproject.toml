@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sw2023"
-version = "0.3.1"
+version = "0.3.2"
 description = "Nonparametric Multiple-Output Stochastic Frontier Analysis (Simar & Wilson 2023)"
 readme = "README.md"
 license = { text = "GPL-3.0-or-later" }

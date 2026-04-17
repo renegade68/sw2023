@@ -125,7 +125,7 @@ sw2023test y1 y2, inputs(x1 x2) reps(299)
 
 ## Replication
 
-All results in the companion JSS manuscript can be reproduced with:
+All numerical results in the accompanying manuscript can be reproduced with:
 
 ```bash
 # Quick verification (< 5 minutes)
@@ -168,13 +168,12 @@ U_it = φ(Z_it) + ||d||·v_it - ||d||·u_it + ||d||·α_i - ||d||·μ_i
 If you use this package, please cite:
 
 ```bibtex
-@article{Lee2025sw2023,
-  author  = {Lee, Choonjoo},
-  title   = {{sw2023}: Nonparametric Multiple-Output Stochastic Frontier
-             Analysis in {Python}},
-  journal = {Journal of Statistical Software},
-  year    = {2025},
-  note    = {Forthcoming}
+@misc{Lee2025sw2023,
+  author = {Lee, Choonjoo},
+  title  = {{sw2023}: Nonparametric Multiple-Output Stochastic Frontier
+            Analysis in {Python}},
+  year   = {2025},
+  note   = {Manuscript submitted for publication}
 }
 ```
 
@@ -186,10 +185,12 @@ If you use this package, please cite:
   with Multiple Inputs and Outputs. *Journal of Business & Economic Statistics*,
   41(4), 1391–1403.
 - Parmeter, C.F., Simar, L., Van Keilegom, I. & Zelenyuk, V. (2024).
-  Inference in the Nonparametric Stochastic Frontier Model.
-  *Econometric Reviews*.
+  Inference in the nonparametric stochastic frontier model.
+  *Econometric Reviews*, 43(7), 518–539.
+  https://doi.org/10.1080/07474938.2024.2339193
 - Hafner, C.M., Manner, H. & Simar, L. (2018). The "wrong skewness" problem
-  in stochastic frontier models. *Journal of Econometrics*, 209(1), 191–202.
+  in stochastic frontier models: A new approach. *Econometric Reviews*, 37(4), 380–400.
+  https://doi.org/10.1080/07474938.2016.1140284
 - Jondrow, J., Lovell, C.A.K., Materov, I.S. & Schmidt, P. (1982).
   On the estimation of technical inefficiency in the stochastic frontier
   production function model. *Journal of Econometrics*, 19(2–3), 233–238.

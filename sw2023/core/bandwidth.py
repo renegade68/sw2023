@@ -4,16 +4,23 @@ Bandwidth Selection
 SW(2023) paper approach:
   Leave-One-Out Cross-Validation (LOO-CV)
   - Independently optimized for each of U ~ Z, ε̂² ~ Z, ε̂³ ~ Z regressions
+  - Per-dimension product kernel: h_k selected independently for k=1,...,d
+    (consistent with SW(2023) Table G.2 Banking Application)
   - Lower bound: 0.1 × σ̂_k × n^{-1/(d+4)}
   - Upper bound: 3 × [max(Z_k) - min(Z_k)]
-  - Scalar multiplier c search: h_k = c × h_ref_k
+
+  bandwidth_loocv_product (recommended, SW(2023)-consistent):
+    Coordinate descent over h_k; K[i,j] = ∏_k exp(-½((Z_ik-Z_jk)/h_k)²)
+
+  bandwidth_loocv (legacy):
+    Scalar multiplier c; h_k = c × h_ref_k  (proportional scaling only)
 
 Hat-matrix LOO trick:
   ŷ_{-i} = (ŷ_i − h_{ii} × y_i) / (1 − h_{ii})
   h_{ii} = [(XtWX_i)^{-1}]_{00}   (holds since K[i,i]=1)
   → LOO-CV can be computed in O(n²) without n re-fits
 
-Reference: Fan & Gijbels (1996) Ch.4, Simar & Wilson (2023) Sec.4
+Reference: Fan & Gijbels (1996) Ch.4, Simar & Wilson (2023) Sec.4, Table G.2
 """
 
 import numpy as np
@@ -258,3 +265,122 @@ def bandwidth_silverman(Z):
     n, d = Z.shape
     h = 1.06 * Z.std(axis=0) * n ** (-1.0 / (d + 4))
     return np.where(h == 0, 1e-6, h)
+
+
+# ─────────────────────────────────────────────────────────────
+# Per-dimension product-kernel LOO-CV (SW 2023 Table G.2)
+# ─────────────────────────────────────────────────────────────
+
+def bandwidth_loocv_product(Z, y, h_ref=None, n_grid=10, max_iter=5,
+                             tol=1e-3, verbose=False):
+    """
+    Per-dimension LOO-CV bandwidth (true product kernel).
+
+    Independently optimizes h_k for each dimension k via coordinate descent,
+    consistent with SW(2023) Table G.2 which reports d separate bandwidths.
+
+    Kernel: K[i,j] = exp(-0.5 × Σ_k ((Z_ik - Z_jk) / h_k)²)
+            = ∏_k exp(-0.5 × ((Z_ik - Z_jk) / h_k)²)
+
+    Algorithm
+    ---------
+    Maintain log_K = -0.5 × Σ_k D_k / c_k²  (n×n, O(n²) memory).
+    For each dimension k:
+      log_K_rest = log_K − log_K_k  (O(n²) subtraction, no d-fold sum)
+      Minimize CV(c_k) via coarse grid + golden-section.
+      Update log_K ← log_K + Δlog_K_k.
+    Stop when max relative change in c < tol.
+
+    Memory: O(n²)  — D_k computed on-the-fly, never stored as (d,n,n) tensor.
+
+    Parameters
+    ----------
+    Z        : (n, d) conditioning variables
+    y        : (n,)  dependent variable
+    h_ref    : (d,)  reference bandwidth (Silverman rule if None)
+    n_grid   : coarse grid points per 1-D search (default 10)
+    max_iter : maximum coordinate-descent iterations (default 5)
+    tol      : relative convergence tolerance (default 1e-3)
+    verbose  : print iteration progress
+
+    Returns
+    -------
+    h_opt : (d,) per-dimension optimal bandwidths
+    """
+    Z = np.asarray(Z, dtype=float)
+    y = np.asarray(y, dtype=float)
+    n, d = Z.shape
+
+    # Reference bandwidth (Silverman)
+    std_Z = Z.std(axis=0)
+    std_Z = np.where(std_Z < 1e-10, 1e-10, std_Z)
+    if h_ref is None:
+        h_ref = std_Z * n ** (-1.0 / (d + 4))
+
+    # Per-dimension bounds on the multiplier c_k  (h_k = c_k × h_ref_k)
+    range_Z  = Z.max(0) - Z.min(0)
+    range_Z  = np.where(range_Z < 1e-10, 1e-10, range_Z)
+    c_high_k = np.minimum(3.0 * range_Z / h_ref, 20.0)
+    c_low_k  = np.full(d, 0.1)
+
+    # Warm-start c from scalar LOO-CV
+    S_init = _precompute_S(Z, h_ref)
+    k_min  = max(5.0, 2.0 * (d + 2))
+    c_init = max(_find_c_neff(S_init, k_min), 0.2)
+    c = np.full(d, c_init)
+
+    # Helper: per-dimension squared scaled distance matrix  O(n²)
+    def _D_k(k):
+        zk = Z[:, k] / h_ref[k]
+        return (zk[:, None] - zk[None, :]) ** 2
+
+    # Initialise log_K = Σ_k log_K_k (n×n)
+    log_K = np.zeros((n, n), dtype=float)
+    for k in range(d):
+        log_K -= 0.5 * _D_k(k) / (c[k] ** 2)
+
+    for iteration in range(max_iter):
+        c_prev = c.copy()
+
+        for k in range(d):
+            D_k = _D_k(k)
+            log_K_k_old = -0.5 * D_k / (c[k] ** 2)   # current contribution
+
+            if d > 1:
+                # K_rest via O(n²) subtraction — no (d-1)-fold sum
+                K_rest = np.exp(log_K - log_K_k_old)
+            else:
+                K_rest = np.ones((n, n))
+
+            def cv_k(log_ck, D_k=D_k, K_rest=K_rest):
+                ck = np.exp(log_ck)
+                K  = K_rest * np.exp(-0.5 * D_k / (ck ** 2))
+                return _loocv_score_from_K(K, Z, y)
+
+            lo_lc = np.log(c_low_k[k])
+            hi_lc = np.log(c_high_k[k])
+            grid  = np.linspace(lo_lc, hi_lc, n_grid)
+            cv_g  = [cv_k(lc) for lc in grid]
+            bi    = int(np.argmin(cv_g))
+
+            lo2 = grid[max(0, bi - 1)]
+            hi2 = grid[min(n_grid - 1, bi + 1)]
+            res = minimize_scalar(cv_k, bounds=(lo2, hi2),
+                                  method='bounded',
+                                  options={'xatol': 0.02})
+            c[k] = float(np.exp(res.x))
+
+            # Update log_K with new c[k]
+            log_K_k_new = -0.5 * D_k / (c[k] ** 2)
+            log_K += log_K_k_new - log_K_k_old
+
+        if verbose:
+            print(f"    product LOO-CV iter {iteration + 1}: "
+                  f"c = {np.round(c, 3)}")
+
+        if np.max(np.abs(c - c_prev) / (c_prev + 1e-10)) < tol:
+            if verbose:
+                print(f"    Converged at iteration {iteration + 1}.")
+            break
+
+    return c * h_ref

@@ -770,7 +770,7 @@ def print_imse_comparison(df):
 
 
 # ─────────────────────────────────────────────────────────────
-# Grid experiment (core of JSS paper)
+# Grid experiment (IMSE comparison with SW 2023 Appendix F)
 # ─────────────────────────────────────────────────────────────
 
 def run_mc_grid(n_sims=30,
@@ -986,7 +986,7 @@ if __name__ == '__main__':
                                  verbose=True)
 
     elif mode == 'grid':
-        # Core of JSS paper: grid experiment (n_jobs=1 sequential, resumable)
+        # Grid experiment (n_jobs=1 sequential, resumable)
         print("=" * 55)
         print("Monte Carlo Grid Experiment (SW 2023 Appendix F comparison)")
         print("=" * 55)

@@ -303,16 +303,22 @@ def estimate_moments(Z, U, h=None, bandwidth_method='silverman', chunk_size=512)
     bandwidth_method='silverman' (default):
       Compute K, XtWX once and reuse for r1, r2, r3.
 
-    bandwidth_method='loocv' (SW 2023 paper approach):
-      Select optimal bandwidth independently for each of r1, r2, r3 via LOO-CV.
-      → K, XtWX are computed 3 times (different bandwidths)
+    bandwidth_method='loocv' (SW 2023 paper approach, recommended):
+      Per-dimension product-kernel LOO-CV (coordinate descent).
+      Selects d independent bandwidths per regression — consistent with
+      SW(2023) Table G.2.  K, XtWX are computed 3 × d times.
+
+    bandwidth_method='loocv_scalar' (legacy scalar LOO-CV):
+      Single scalar multiplier c; h_k = c × h_ref_k  (proportional scaling).
+      Faster than 'loocv' but less flexible.  Retained for reproducibility
+      of earlier results.
 
     Parameters
     ----------
     Z                : (n, d) independent variables
     U                : (n,)   dependent variable
     h                : bandwidth (used in silverman mode only; auto if None)
-    bandwidth_method : 'silverman' | 'loocv'
+    bandwidth_method : 'silverman' | 'loocv' | 'loocv_scalar'
     chunk_size       : int
 
     Returns
@@ -326,12 +332,17 @@ def estimate_moments(Z, U, h=None, bandwidth_method='silverman', chunk_size=512)
     reg = 1e-10 * np.eye(d + 1)
     ZZT = np.einsum('ij,ik->ijk', Z, Z)   # (n, d, d)
 
-    if bandwidth_method == 'loocv':
-        # ── LOO-CV: select optimal bandwidth independently per regression ──
-        from .bandwidth import bandwidth_loocv
+    if bandwidth_method in ('loocv', 'loocv_scalar'):
+        # ── LOO-CV: independently per regression ────────────────────────
+        if bandwidth_method == 'loocv':
+            # Per-dimension product kernel  (SW(2023) Table G.2 consistent)
+            from .bandwidth import bandwidth_loocv_product as _bw_fn
+        else:
+            # Scalar multiplier (legacy, proportional scaling)
+            from .bandwidth import bandwidth_loocv as _bw_fn
 
         # Step 1: r1 — U ~ Z
-        h_r1  = bandwidth_loocv(Z, U)
+        h_r1  = _bw_fn(Z, U)
         K1    = _compute_K_full(Z, h_r1, chunk_size)
         XtWX1 = _compute_XtWX_batch(K1, Z, ZZT, reg)
         XtWy1 = _compute_XtWy_batch(K1, Z, U)
@@ -339,14 +350,14 @@ def estimate_moments(Z, U, h=None, bandwidth_method='silverman', chunk_size=512)
         eps   = U - r1
 
         # Step 2: r2 — ε̂² ~ Z
-        h_r2  = bandwidth_loocv(Z, eps ** 2)
+        h_r2  = _bw_fn(Z, eps ** 2)
         K2    = _compute_K_full(Z, h_r2, chunk_size)
         XtWX2 = _compute_XtWX_batch(K2, Z, ZZT, reg)
         XtWy2 = _compute_XtWy_batch(K2, Z, eps ** 2)
         r2    = _llls_from_normal_equations(XtWX2, XtWy2, eps ** 2)
 
         # Step 3: r3 — ε̂³ ~ Z
-        h_r3  = bandwidth_loocv(Z, eps ** 3)
+        h_r3  = _bw_fn(Z, eps ** 3)
         K3    = _compute_K_full(Z, h_r3, chunk_size)
         XtWX3 = _compute_XtWX_batch(K3, Z, ZZT, reg)
         XtWy3 = _compute_XtWy_batch(K3, Z, eps ** 3)
