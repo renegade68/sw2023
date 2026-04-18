@@ -197,6 +197,14 @@ If you use this package, please cite:
 
 ---
 
+## Acknowledgments
+
+Claude (Anthropic) was used as an AI coding assistant during the development
+of this software. All research design, methodology, analysis, interpretation,
+and writing are the sole responsibility of the author.
+
+---
+
 ## License
 
 GNU General Public License v3 or later (GPL-3.0-or-later).
