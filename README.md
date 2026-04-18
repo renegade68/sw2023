@@ -161,6 +161,10 @@ U_it = φ(Z_it) + ||d||·v_it - ||d||·u_it + ||d||·α_i - ||d||·μ_i
 - `α_i ~ N(0, σ_α²)`: individual heterogeneity
 - `μ_i ~ N⁺(0, σ_μ²)`: persistent inefficiency
 
+> **Note**: The current implementation uses a user-specified direction vector `d`.
+> Data-driven or adaptive selection of `d` — including optimality criteria and
+> sensitivity analysis — is left for future research.
+
 ---
 
 ## Citation
