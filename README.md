@@ -161,10 +161,6 @@ U_it = φ(Z_it) + ||d||·v_it - ||d||·u_it + ||d||·α_i - ||d||·μ_i
 - `α_i ~ N(0, σ_α²)`: individual heterogeneity
 - `μ_i ~ N⁺(0, σ_μ²)`: persistent inefficiency
 
-> **Note**: The current implementation uses a user-specified direction vector `d`.
-> Data-driven or adaptive selection of `d` — including optimality criteria and
-> sensitivity analysis — is left for future research.
-
 ---
 
 ## Citation
@@ -176,7 +172,7 @@ If you use this package, please cite:
   author = {Lee, Choonjoo},
   title  = {{sw2023}: Nonparametric Multiple-Output Stochastic Frontier
             Analysis in {Python}},
-  year   = {2025},
+  year   = {2026},
   note   = {Manuscript submitted for publication}
 }
 ```
@@ -198,14 +194,6 @@ If you use this package, please cite:
 - Jondrow, J., Lovell, C.A.K., Materov, I.S. & Schmidt, P. (1982).
   On the estimation of technical inefficiency in the stochastic frontier
   production function model. *Journal of Econometrics*, 19(2–3), 233–238.
-
----
-
-## Acknowledgments
-
-Claude (Anthropic) was used as an AI coding assistant during the development
-of this software. All research design, methodology, analysis, interpretation,
-and writing are the sole responsibility of the author.
 
 ---
 
