@@ -289,49 +289,125 @@ def plot_decomposition(model, figsize=(6, 6),
 
 
 # ─────────────────────────────────────────────────────────────
-# 6. Comprehensive dashboard
+# 6. Residual distribution diagnostic
 # ─────────────────────────────────────────────────────────────
-def dashboard_crosssection(model, figsize=(12, 8), title='SW(2023) Results'):
+def plot_residuals(model, bins=40, figsize=(7, 4),
+                   title='Residual Distribution (eps = U − r̂₁)',
+                   ax=None):
     """
-    Comprehensive dashboard for 2-component model.
+    Histogram of composite residuals eps = U - r_hat_1(Z).
 
-    Panels:
-      [0,0] Efficiency distribution
-      [0,1] Efficiency ranking
-      [1,0] Z vs U scatter plot
-      [1,1] Residual distribution (r3 sign distribution)
+    Under the model, eps = ||d||·v - ||d||·eta where v ~ N(0, sigma_eps^2)
+    and eta ~ N+(0, sigma_eta^2).  The resulting distribution is
+    skewed left (negative skewness) when inefficiency is present.
+    Observations with r_hat_3 > 0 (wrong skewness) are highlighted.
+
+    Parameters
+    ----------
+    model : SW2023Model (fitted)
+    bins  : int
+    figsize : tuple
+    title   : str
+    ax      : matplotlib Axes or None
     """
     _check_mpl()
-    fig = plt.figure(figsize=figsize)
-    fig.suptitle(title, fontsize=13)
 
-    gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.4, wspace=0.35)
+    eps    = model.eps_
+    r3     = model.r3_
+    wrong  = r3 > 0
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.figure
+
+    ax.hist(eps[~wrong], bins=bins, color='steelblue', alpha=0.7,
+            density=True, label=f'Normal skew ({(~wrong).sum()})')
+    if wrong.any():
+        ax.hist(eps[wrong], bins=bins, color='tomato', alpha=0.6,
+                density=True, label=f'Wrong skew ({wrong.sum()})')
+
+    ax.axvline(0, color='black', linewidth=0.8, linestyle='--')
+    skew = float(((eps - eps.mean()) ** 3).mean() / eps.std() ** 3)
+    ax.set_xlabel('eps  (= U − r̂₁)')
+    ax.set_ylabel('Density')
+    ax.set_title(f'{title}\nskewness = {skew:.3f}')
+    ax.legend(fontsize=9)
+    plt.tight_layout()
+    return fig, ax
+
+
+# ─────────────────────────────────────────────────────────────
+# 7. Comprehensive dashboard
+# ─────────────────────────────────────────────────────────────
+def plot_diagnostics(model, figsize=(12, 9),
+                     title='SW(2023) Diagnostic Plots'):
+    """
+    Diagnostic plot panel for a fitted SW2023Model (2×2 layout).
+
+    Panels
+    ------
+    (0,0) Efficiency distribution — histogram + mean/median lines
+    (0,1) Efficiency ranking     — caterpillar plot (sorted scores)
+    (1,0) Residual distribution  — eps = U − r̂₁, wrong-skew highlighted
+    (1,1) r̂₃ sign distribution  — wrong-skewness diagnostic
+
+    Parameters
+    ----------
+    model   : SW2023Model (fitted)
+    figsize : tuple, default (12, 9)
+    title   : str
+
+    Returns
+    -------
+    fig : matplotlib Figure
+    """
+    _check_mpl()
+
+    n   = len(model.efficiency_)
+    ws  = float((model.r3_ > 0).mean() * 100)
+    fig = plt.figure(figsize=figsize)
+    fig.suptitle(
+        f'{title}  |  n={n}, method={model.method}, '
+        f'wrong-skew={ws:.1f}%',
+        fontsize=12
+    )
+    gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.35)
 
     # (0,0) Efficiency distribution
     ax0 = fig.add_subplot(gs[0, 0])
-    plot_efficiency_dist(model.efficiency_, title='Efficiency Distribution', ax=ax0)
+    plot_efficiency_dist(model.efficiency_,
+                         title='Efficiency Distribution', ax=ax0)
 
     # (0,1) Efficiency ranking
     ax1 = fig.add_subplot(gs[0, 1])
-    plot_efficiency_rank(model.efficiency_, title='Efficiency Ranking', ax=ax1)
+    plot_efficiency_rank(model.efficiency_,
+                         title='Efficiency Ranking', ax=ax1)
 
-    # (1,0) Z vs U
+    # (1,0) Residual distribution
     ax2 = fig.add_subplot(gs[1, 0])
-    plot_frontier_1d(model, dim=0,
-                      title='Frontier Estimate (Z[0] vs U)', ax=ax2)
+    plot_residuals(model, ax=ax2)
 
-    # (1,1) r3 distribution
+    # (1,1) r3 sign distribution (wrong-skewness diagnostic)
     ax3 = fig.add_subplot(gs[1, 1])
-    r3_vals = model.r3_
-    ax3.hist(r3_vals[r3_vals < 0], bins=25, color='steelblue',
-              alpha=0.7, label=f'r3<0: {(r3_vals<0).mean()*100:.1f}%',
-              density=True)
-    ax3.hist(r3_vals[r3_vals >= 0], bins=25, color='tomato',
-              alpha=0.7, label=f'r3>=0: {(r3_vals>=0).mean()*100:.1f}%',
-              density=True)
-    ax3.set_xlabel('r3 (3rd conditional moment)')
+    r3  = model.r3_
+    neg_mask = r3 < 0
+    ax3.hist(r3[neg_mask],  bins=30, color='steelblue', alpha=0.7,
+             density=True,
+             label=f'r̂₃ < 0 (correct): {neg_mask.mean()*100:.1f}%')
+    ax3.hist(r3[~neg_mask], bins=30, color='tomato',    alpha=0.7,
+             density=True,
+             label=f'r̂₃ ≥ 0 (wrong skew): {(~neg_mask).mean()*100:.1f}%')
+    ax3.axvline(0, color='black', linewidth=0.8, linestyle='--')
+    ax3.set_xlabel('r̂₃(Z)  (3rd conditional moment)')
     ax3.set_ylabel('Density')
-    ax3.set_title('r3 Sign Distribution (negative is normal)')
+    ax3.set_title('Wrong-Skewness Diagnostic\n(negative r̂₃ required for valid σ̂η)')
     ax3.legend(fontsize=9)
 
     return fig
+
+
+# kept for backward compatibility
+def dashboard_crosssection(model, figsize=(12, 8), title='SW(2023) Results'):
+    """Alias for plot_diagnostics (backward compatibility)."""
+    return plot_diagnostics(model, figsize=figsize, title=title)

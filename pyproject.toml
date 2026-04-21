@@ -7,7 +7,7 @@ name = "sw2023"
 version = "0.3.2"
 description = "Nonparametric Multiple-Output Stochastic Frontier Analysis (Simar & Wilson 2023)"
 readme = "README.md"
-license = { text = "GPL-3.0-or-later" }
+license = "GPL-3.0-or-later"
 authors = [
     { name = "Choonjoo Lee", email = "bloom.rampike@gmail.com" }
 ]
@@ -22,7 +22,7 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -50,13 +50,16 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/renegade68/sw2023"
-Documentation = "https://github.com/renegade68/sw2023#readme"
+Documentation = "https://sw2023.readthedocs.io"
+"Source Code" = "https://github.com/renegade68/sw2023"
 Issues = "https://github.com/renegade68/sw2023/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["sw2023*"]
-exclude = ["sw2023/tests*", "sw2023/examples*"]
 
 [tool.setuptools.package-data]
-sw2023 = ["stata/*.do", "stata/*.py"]
+sw2023 = ["stata/*.do", "stata/*.ado", "stata/*.sthlp", "stata/*.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["sw2023/tests"]

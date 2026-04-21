@@ -171,10 +171,8 @@ def bandwidth_loocv(Z, y, h_ref=None, n_grid=15, verbose=False):
     Search for c* minimizing h_k = c* × h_ref_k.
     h_ref_k = σ̂_k × n^{-1/(d+4)}  (optimal convergence rate reference)
 
-    SW(2023) constraints:
-      Lower bound: c ≥ max(0.1, c_neff)  — average effective neighbors ≥ max(5, 2(d+2))
-                   Too small c (e.g. c=0.1) causes interpolation → degenerate CV curve
-      Upper bound: h_k ≤ 3 × range(Z_k) →  c ≤ 3×range/h_ref (minimum across dimensions)
+    SW(2023) constraints: lower bound c >= max(0.1, c_neff) ensures average
+    effective neighbors >= max(5, 2(d+2)); upper bound h_k <= 3 × range(Z_k).
 
     Parameters
     ----------
@@ -282,16 +280,12 @@ def bandwidth_loocv_product(Z, y, h_ref=None, n_grid=10, max_iter=5,
     Kernel: K[i,j] = exp(-0.5 × Σ_k ((Z_ik - Z_jk) / h_k)²)
             = ∏_k exp(-0.5 × ((Z_ik - Z_jk) / h_k)²)
 
-    Algorithm
-    ---------
-    Maintain log_K = -0.5 × Σ_k D_k / c_k²  (n×n, O(n²) memory).
-    For each dimension k:
-      log_K_rest = log_K − log_K_k  (O(n²) subtraction, no d-fold sum)
-      Minimize CV(c_k) via coarse grid + golden-section.
-      Update log_K ← log_K + Δlog_K_k.
-    Stop when max relative change in c < tol.
+    Maintains ``log_K = -0.5 × Σ_k D_k / c_k²`` (n×n, O(n²) memory).
+    For each dimension k, removes its contribution, optimizes ``c_k`` via
+    coarse grid + golden-section, and updates ``log_K``.
+    Stops when the maximum relative change in any ``c_k`` is below ``tol``.
 
-    Memory: O(n²)  — D_k computed on-the-fly, never stored as (d,n,n) tensor.
+    Memory: O(n²) — D_k computed on-the-fly, never stored as (d,n,n) tensor.
 
     Parameters
     ----------

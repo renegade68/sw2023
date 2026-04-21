@@ -118,7 +118,7 @@ constructed from the data.
 deviation sigma_eta(Z).
 {cmd:hms} (default) uses the Hafner, Manner & Simar (2018) approach, which
 handles the "wrong skewness" case when r_hat_3(Z) > 0;
-{cmd:svkz} uses the Simar, Van Keilegom & Zelenyuk (2017) estimator, which
+{cmd:svkz} uses the Parmeter, Simar, Van Keilegom & Zelenyuk (2024) estimator, which
 truncates sigma_eta at zero when r_hat_3(Z) > 0.
 
 {phang}

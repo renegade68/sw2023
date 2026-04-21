@@ -1,0 +1,7 @@
+include LICENSE
+include README.md
+include pyproject.toml
+recursive-include sw2023 *.py *.ado *.sthlp *.do
+prune sw2023_replication
+prune sw2023/examples
+exclude *.zip *.csv *.pdf *.png *.tex *.bib *.log

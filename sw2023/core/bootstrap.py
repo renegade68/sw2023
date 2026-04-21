@@ -33,6 +33,7 @@ from .frontier   import estimate_moments, local_linear
 from .decompose  import (estimate_sigma_eta, estimate_sigma_eps,
                          estimate_frontier, jlms_efficiency)
 from .preprocess import preprocess_apply
+from .results    import BootstrapResult, SignificanceTestResult
 
 
 # ─────────────────────────────────────────────────────────────
@@ -226,37 +227,33 @@ def bootstrap_sw(X, Y, B=200, alpha=0.05,
 
     lo, hi = alpha / 2 * 100, (1 - alpha / 2) * 100
 
-    result = {
-        # Frontier phi_hat(z)
-        'phi_hat_point'       : m0.phi_hat_,
-        'phi_hat_ci'          : np.column_stack([
+    result = BootstrapResult(
+        phi_hat_point        = m0.phi_hat_,
+        phi_hat_ci           = np.column_stack([
             np.nanpercentile(boot_phi, lo, axis=0),
             np.nanpercentile(boot_phi, hi, axis=0),
         ]),
-        # Mean efficiency
-        'eff_mean_point'      : float(np.nanmean(m0.efficiency_)),
-        'eff_mean_ci'         : np.nanpercentile(
-                                    np.nanmean(boot_eff, axis=1), [lo, hi]),
-        # Individual efficiency
-        'eff_individual_point': m0.efficiency_,
-        'eff_individual_ci'   : np.column_stack([
+        eff_mean_point       = float(np.nanmean(m0.efficiency_)),
+        eff_mean_ci          = np.nanpercentile(
+                                   np.nanmean(boot_eff, axis=1), [lo, hi]),
+        eff_individual_point = m0.efficiency_,
+        eff_individual_ci    = np.column_stack([
             np.nanpercentile(boot_eff, lo, axis=0),
             np.nanpercentile(boot_eff, hi, axis=0),
         ]),
-        # sigma_eta
-        'sigma_eta_point'     : m0.sigma_eta_,
-        'sigma_eta_ci'        : np.column_stack([
+        sigma_eta_point      = m0.sigma_eta_,
+        sigma_eta_ci         = np.column_stack([
             np.nanpercentile(boot_sigma_eta, lo, axis=0),
             np.nanpercentile(boot_sigma_eta, hi, axis=0),
         ]),
-        'B'    : B,
-        'alpha': alpha,
-        'n_fail': n_fail,
-    }
+        B      = B,
+        alpha  = alpha,
+        n_fail = n_fail,
+    )
 
     if verbose:
-        ci = result['eff_mean_ci']
-        print(f"\nMean efficiency: {result['eff_mean_point']:.4f}  "
+        ci = result.eff_mean_ci
+        print(f"\nMean efficiency: {result.eff_mean_point:.4f}  "
               f"{int((1-alpha)*100)}% CI: [{ci[0]:.4f}, {ci[1]:.4f}]")
 
     return result
@@ -276,8 +273,8 @@ def bootstrap_panel(X, Y, firm_id, time_id,
     Cluster bootstrap confidence intervals for PanelSW2023.
 
     Resample by firm unit to preserve within-panel time-series dependence.
-    Individual observation CIs are corrected in the same way as bootstrap_sw:
-      Resample → transform with same d → evaluate at original Z points.
+    Individual observation CIs are corrected in the same way as ``bootstrap_sw``:
+    resample, transform with same d, then evaluate at original Z points.
 
     Parameters
     ----------
@@ -352,33 +349,33 @@ def bootstrap_panel(X, Y, firm_id, time_id,
 
     lo, hi = alpha / 2 * 100, (1 - alpha / 2) * 100
 
-    result = {
-        'phi_hat_point'       : m0.phi_hat_,
-        'phi_hat_ci'          : np.column_stack([
+    result = BootstrapResult(
+        phi_hat_point        = m0.phi_hat_,
+        phi_hat_ci           = np.column_stack([
             np.nanpercentile(boot_phi, lo, axis=0),
             np.nanpercentile(boot_phi, hi, axis=0),
         ]),
-        'eff_mean_point'      : float(np.nanmean(m0.efficiency_)),
-        'eff_mean_ci'         : np.nanpercentile(
-                                    np.nanmean(boot_eff, axis=1), [lo, hi]),
-        'eff_individual_point': m0.efficiency_,
-        'eff_individual_ci'   : np.column_stack([
+        eff_mean_point       = float(np.nanmean(m0.efficiency_)),
+        eff_mean_ci          = np.nanpercentile(
+                                   np.nanmean(boot_eff, axis=1), [lo, hi]),
+        eff_individual_point = m0.efficiency_,
+        eff_individual_ci    = np.column_stack([
             np.nanpercentile(boot_eff, lo, axis=0),
             np.nanpercentile(boot_eff, hi, axis=0),
         ]),
-        'sigma_eta_point'     : m0.sigma_eta_,
-        'sigma_eta_ci'        : np.column_stack([
+        sigma_eta_point      = m0.sigma_eta_,
+        sigma_eta_ci         = np.column_stack([
             np.nanpercentile(boot_sigma_eta, lo, axis=0),
             np.nanpercentile(boot_sigma_eta, hi, axis=0),
         ]),
-        'B'     : B,
-        'alpha' : alpha,
-        'n_fail': n_fail,
-    }
+        B      = B,
+        alpha  = alpha,
+        n_fail = n_fail,
+    )
 
     if verbose:
-        ci = result['eff_mean_ci']
-        print(f"\nMean efficiency: {result['eff_mean_point']:.4f}  "
+        ci = result.eff_mean_ci
+        print(f"\nMean efficiency: {result.eff_mean_point:.4f}  "
               f"{int((1-alpha)*100)}% CI: [{ci[0]:.4f}, {ci[1]:.4f}]")
 
     return result
@@ -395,19 +392,20 @@ def test_r3_significance(X, Y, direction='mean', method='HMS',
     """
     Test whether inefficiency (eta) genuinely depends on observable covariates Z.
 
-    Null hypothesis H0: E(epsilon^3|Z) = const  (spatially uniform inefficiency)
-    Alternative   H1: E(epsilon^3|Z) != const  (heterogeneous inefficiency)
+    Null hypothesis H0: E(epsilon^3|Z) = const  (spatially uniform inefficiency).
+    Alternative   H1: E(epsilon^3|Z) differs across Z (heterogeneous inefficiency).
 
     PSVKZ(2024) Section 3.1 wild bootstrap (Rademacher perturbation):
-      1) Estimate r_hat_3(Z_i) → residuals eta_i = eps_hat^3_i - r_hat_3(Z_i)
-      2) Center: eta^c_i = eta_i - mean(eta)
-      3) Wild perturbation: eta*_i = eta^c_i × V_i,  V_i ~ Rademacher(+-1, 50% each)
-      4) Bootstrap response: eps_hat^3'*_i = r_hat_3(Z_i) + eta*_i
-      5) Re-estimate r_hat*_3(Z) from eps_hat^3'* → compute test statistic T*_b
-      6) p-value = #{T*_b >= T_obs} / B
+
+    1. Estimate r_hat_3(Z_i); compute residuals eta_i = eps_hat^3_i - r_hat_3(Z_i).
+    2. Center: eta^c_i = eta_i - mean(eta).
+    3. Wild perturbation: eta*_i = eta^c_i x V_i, V_i ~ Rademacher(+-1, 50% each).
+    4. Bootstrap response: eps_hat^3*_i = r_hat_3(Z_i) + eta*_i.
+    5. Re-estimate r_hat*_3(Z) and compute T*_b.
+    6. p-value = #{T*_b >= T_obs} / B.
 
     Test statistic (variance-weighted average heterogeneity):
-      T = (1/n) × sum_i (r_hat_3(Z_i) - mean(r_hat_3))^2 / Var(eps_hat^3)
+    T = Var(r_hat_3) / Var(eps_hat^3).
 
     Parameters
     ----------
@@ -477,14 +475,15 @@ def test_r3_significance(X, Y, direction='mean', method='HMS',
 
     p_value = float((T_boot >= T_obs).mean())
 
-    if verbose:
-        print(f"\n  p-value = {p_value:.4f}  "
-              f"({'Significant (heterogeneous inefficiency)' if p_value < 0.05 else 'Not significant (uniform inefficiency)'})")
+    result = SignificanceTestResult(
+        statistic = T_obs,
+        p_value   = p_value,
+        r3_hat    = r3_obs,
+        T_boot    = T_boot,
+        B         = B,
+    )
 
-    return {
-        'statistic': T_obs,
-        'p_value'  : p_value,
-        'r3_hat'   : r3_obs,
-        'T_boot'   : T_boot,
-        'B'        : B,
-    }
+    if verbose:
+        result.summary()
+
+    return result

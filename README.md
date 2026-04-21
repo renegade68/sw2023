@@ -3,6 +3,7 @@
 **Nonparametric Multiple-Output Stochastic Frontier Analysis in Python**
 
 [![PyPI version](https://img.shields.io/pypi/v/sw2023)](https://pypi.org/project/sw2023/)
+[![Documentation](https://readthedocs.org/projects/sw2023/badge/?version=latest)](https://sw2023.readthedocs.io)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
 
@@ -89,7 +90,7 @@ print(ci['se_phi'])                 # (n,) standard errors
 ```python
 from sw2023 import test_r3_significance
 
-res = test_r3_significance(X, Y, B=299)
+res = test_r3_significance(X, Y, B=999, seed=42)
 print(res['p_value'])               # H0: E(eps^3 | Z) = const
 ```
 
@@ -138,6 +139,14 @@ python replication.py --full
 Pre-computed Monte Carlo results (100 replications per cell) are provided
 in `mc_imse_results.csv`. IMSE ratios relative to Simar & Wilson (2023)
 Table F.1 range from 0.94 to 1.29 with median 1.04.
+
+**Note on bootstrap reproducibility.** All bootstrap procedures
+(`bootstrap_sw`, `bootstrap_panel`, `test_r3_significance`) accept a `seed`
+argument for exact reproducibility. The replication script fixes `seed=2023`
+and uses `B=999` for the wild bootstrap significance test; omitting `seed`
+produces stochastic results that will differ across runs. The test statistic
+`T` is deterministic (computed from the original sample) and is unaffected by
+the choice of seed; only the bootstrap p-value varies.
 
 ---
 

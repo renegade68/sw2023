@@ -1,6 +1,6 @@
 """
 4-Component Panel Stochastic Frontier Model
-SW(2023) rotation transformation + Colombi et al.(2014) / Parmeter & Kumbhakar(2025) 4-component decomposition
+SW(2023) rotation transformation + Colombi et al.(2014) / Tsionas & Kumbhakar(2014) 4-component decomposition
 
 Model structure:
   U_it = φ(Z_it) + ||d||·v_it - ||d||·u_it + ||d||·α_i - ||d||·μ_i
@@ -10,7 +10,7 @@ Model structure:
   α_i   ~ N(0, σ_α²)            : individual heterogeneity (time-invariant, symmetric)
   μ_i   ~ N⁺(0, σ_μ²)           : persistent inefficiency (time-invariant, one-sided)
 
-Identification strategy (Colombi et al. 2014 / Parmeter & Kumbhakar 2025):
+Identification strategy (Colombi et al. 2014 / Tsionas & Kumbhakar 2014):
   - Within-individual variation   → transient components (v_it, u_it) identified
   - Between-individual variation  → persistent components (α_i, μ_i) identified
 

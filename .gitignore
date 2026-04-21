@@ -1,12 +1,41 @@
+# Python generated
 __pycache__/
 *.py[cod]
 *.egg-info/
 dist/
 build/
+.eggs/
+
+# Sphinx build
+docs/_build/
+
+# Submission working directory
+sw2023_submission_v032/
+
+# OS / editor
 .DS_Store
+*.swp
+
+# LaTeX
 *.log
 *.aux
 *.out
 *.bbl
 *.blg
+
+# Archives
 *.zip
+*.tar.gz
+
+# Research / working files (PDF, figures, misc CSVs)
+*.pdf
+*.png
+bw_search_log.txt
+bw_search_results.csv
+norway_loocv_comparison.csv
+run_loocv_comparison.py
+make_figures.py
+diag_*.py
+diag_*.csv
+mc_d_*.py
+mc_d_*.csv

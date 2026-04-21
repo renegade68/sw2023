@@ -15,6 +15,7 @@ from .frontier   import estimate_moments, local_linear, compute_leverages, _comp
 from .decompose  import (estimate_sigma_eta, estimate_sigma_eps,
                          estimate_frontier, jlms_efficiency)
 from .preprocess import preprocess
+from .results    import ConfintResult, BootstrapResult
 
 
 class SW2023Model:
@@ -42,6 +43,21 @@ class SW2023Model:
         self.standardize     = standardize
         self.bandwidth_method = bandwidth_method
         self._fitted = False
+
+    def __repr__(self):
+        n = getattr(self, 'X_raw', None)
+        n = len(n) if n is not None else '?'
+        p = self.X_raw.shape[1] if hasattr(self, 'X_raw') else '?'
+        q = self.Y_raw.shape[1] if hasattr(self, 'Y_raw') else '?'
+        if not self._fitted:
+            return (f"SW2023Model(n={n}, p={p}, q={q}, "
+                    f"method='{self.method}', not fitted)")
+        eff_mean = float(np.nanmean(self.efficiency_))
+        ws_pct   = float((self.r3_ > 0).mean() * 100)
+        return (f"SW2023Model(n={n}, p={p}, q={q}, "
+                f"method='{self.method}', "
+                f"mean_eff={eff_mean:.4f}, "
+                f"wrong_skew={ws_pct:.1f}%)")
 
     def fit(self, verbose=True):
         """Estimate the SW(2023) nonparametric stochastic frontier model.
@@ -255,24 +271,24 @@ class SW2023Model:
         se_phi  = np.sqrt(np.maximum(var_phi, 0.0))
 
         # ── Construct CI ───────────────────────────────────────────
-        return {
-            'phi_hat_ci': np.column_stack([
+        return ConfintResult(
+            phi_hat_ci=np.column_stack([
                 self.phi_hat_ - z_crit * se_phi,
                 self.phi_hat_ + z_crit * se_phi,
             ]),
-            'r1_ci': np.column_stack([
+            r1_ci=np.column_stack([
                 self.r1_ - z_crit * se_r1,
                 self.r1_ + z_crit * se_r1,
             ]),
-            'r3_ci': np.column_stack([
+            r3_ci=np.column_stack([
                 self.r3_ - z_crit * se_r3,
                 self.r3_ + z_crit * se_r3,
             ]),
-            'se_phi': se_phi,
-            'se_r1' : se_r1,
-            'se_r3' : se_r3,
-            'alpha' : alpha,
-        }
+            se_phi=se_phi,
+            se_r1=se_r1,
+            se_r3=se_r3,
+            alpha=alpha,
+        )
 
     def predict_at(self, Z_eval, U_eval=None):
         """
@@ -335,3 +351,129 @@ class SW2023Model:
             'eta_hat'    : self.eta_hat_,
             'efficiency' : self.efficiency_,
         })
+
+    # ── Plotting methods ──────────────────────────────────────────────────────
+
+    def plot_efficiency(self, bins=30, figsize=(7, 4), ax=None):
+        """
+        Histogram of efficiency scores with mean and median lines.
+
+        Parameters
+        ----------
+        bins    : int, default 30
+        figsize : tuple, default (7, 4)
+        ax      : matplotlib Axes or None
+            If provided, plot into this axes; otherwise a new figure is created.
+
+        Returns
+        -------
+        fig, ax : matplotlib Figure and Axes
+        """
+        if not self._fitted:
+            raise RuntimeError("Please run fit() first.")
+        from .visualize import plot_efficiency_dist
+        return plot_efficiency_dist(
+            self.efficiency_,
+            title=f'Efficiency Distribution  (n={len(self.efficiency_)}, '
+                  f'method={self.method})',
+            bins=bins, figsize=figsize, ax=ax,
+        )
+
+    def plot_frontier(self, dim=0, figsize=(7, 5), ax=None):
+        """
+        Scatter plot of U vs Z[dim] with the estimated frontier phi_hat(Z).
+
+        Points are colour-coded by efficiency score (red = inefficient,
+        green = efficient).
+
+        Parameters
+        ----------
+        dim     : int, default 0
+            Index of the Z dimension to use as the x-axis.
+        figsize : tuple, default (7, 5)
+        ax      : matplotlib Axes or None
+
+        Returns
+        -------
+        fig, ax : matplotlib Figure and Axes
+        """
+        if not self._fitted:
+            raise RuntimeError("Please run fit() first.")
+        from .visualize import plot_frontier_1d
+        return plot_frontier_1d(self, dim=dim, figsize=figsize, ax=ax)
+
+    def plot_diagnostics(self, figsize=(12, 9)):
+        """
+        Comprehensive diagnostic panel (2×2 layout).
+
+        Panels
+        ------
+        (top-left)     Efficiency distribution
+        (top-right)    Efficiency ranking (caterpillar)
+        (bottom-left)  Residual distribution (eps = U − r̂₁)
+        (bottom-right) Wrong-skewness diagnostic (r̂₃ sign)
+
+        Parameters
+        ----------
+        figsize : tuple, default (12, 9)
+
+        Returns
+        -------
+        fig : matplotlib Figure
+        """
+        if not self._fitted:
+            raise RuntimeError("Please run fit() first.")
+        from .visualize import plot_diagnostics as _plot_diag
+        return _plot_diag(self, figsize=figsize)
+
+    def bootstrap(self, B=200, alpha=0.05,
+                  bandwidth_method='silverman',
+                  seed=None, verbose=True):
+        """
+        Pairs bootstrap confidence intervals for this fitted model.
+
+        Resamples (X, Y) with replacement, re-estimates the model using the
+        same fixed direction vector and preprocessing, then evaluates each
+        bootstrap estimate at the original data points.  Yields per-observation
+        CIs for phi_hat(z), sigma_eta(z), and individual efficiency, as well
+        as a CI for the mean efficiency.
+
+        Parameters
+        ----------
+        B : int, default 200
+            Number of bootstrap draws.
+        alpha : float, default 0.05
+            Significance level; produces (1 - alpha) confidence intervals.
+        bandwidth_method : {'silverman', 'loocv'}, default 'silverman'
+            Bandwidth selection for each bootstrap replicate.  'silverman' is
+            strongly recommended here — LOO-CV per replicate is very slow.
+        seed : int or None
+            Random seed for reproducibility.
+        verbose : bool, default True
+            Print progress messages.
+
+        Returns
+        -------
+        BootstrapResult
+            Object with attributes phi_hat_ci, eff_mean_ci,
+            eff_individual_ci, sigma_eta_ci, and a summary() method.
+
+        See Also
+        --------
+        confint_asymptotic : faster asymptotic alternative (large n).
+        """
+        if not self._fitted:
+            raise RuntimeError("Please run fit() first.")
+
+        from .bootstrap import bootstrap_sw
+        return bootstrap_sw(
+            self.X_raw, self.Y_raw,
+            B=B, alpha=alpha,
+            direction=self.direction_spec,
+            method=self.method,
+            log_transform=self.log_transform,
+            standardize=self.standardize,
+            bandwidth_method=bandwidth_method,
+            seed=seed,
+            verbose=verbose,
+        )
