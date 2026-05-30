@@ -87,7 +87,7 @@ def transform(X, Y, d):
     Y = np.asarray(Y, dtype=float)
     W = np.hstack([X, Y])              # (n, r)
     R = rotation_matrix(d)             # (r, r)
-    WR = W @ R.T                       # (n, r)
+    WR = np.einsum('ij,kj->ik', W, R, optimize=True)
     Z = WR[:, :-1]                     # (n, r-1)
     U = WR[:, -1]                      # (n,)
     return Z, U, R
@@ -108,5 +108,5 @@ def inverse_transform(Z, U, R):
     W : (n, r) = recovered (X, Y)
     """
     ZU = np.column_stack([Z, U])       # (n, r)
-    W = ZU @ R                         # (n, r)
+    W = np.einsum('ij,jk->ik', ZU, R, optimize=True)
     return W

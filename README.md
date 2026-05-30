@@ -71,8 +71,8 @@ print(m.sigma_eta_.mean())          # mean sigma_eta
 from sw2023 import bootstrap_sw
 
 result = bootstrap_sw(X, Y, B=199, alpha=0.05)
-print(result['eff_mean_ci'])        # [lower, upper]
-print(result['phi_hat_ci'])         # (n, 2) frontier CI
+print(result.eff_mean_ci)           # [lower, upper]
+print(result.phi_hat_ci)            # (n, 2) frontier CI
 ```
 
 ### Asymptotic CI (fast)
@@ -81,8 +81,8 @@ print(result['phi_hat_ci'])         # (n, 2) frontier CI
 m = SW2023Model(X, Y, method='HMS')
 m.fit()
 ci = m.confint_asymptotic(alpha=0.05)
-print(ci['phi_hat_ci'])             # (n, 2)
-print(ci['se_phi'])                 # (n,) standard errors
+print(ci.phi_hat_ci)                # (n, 2)
+print(ci.se_phi)                    # (n,) standard errors
 ```
 
 ### Significance test for inefficiency heterogeneity
@@ -91,7 +91,7 @@ print(ci['se_phi'])                 # (n,) standard errors
 from sw2023 import test_r3_significance
 
 res = test_r3_significance(X, Y, B=999, seed=42)
-print(res['p_value'])               # H0: E(eps^3 | Z) = const
+print(res.p_value)                  # H0: E(eps^3 | Z) = const
 ```
 
 ### Panel model (4-component)
@@ -126,19 +126,29 @@ sw2023test y1 y2, inputs(x1 x2) reps(299)
 
 ## Replication
 
-All numerical results in the accompanying manuscript can be reproduced with:
+The replication archive separates manuscript values from fresh execution
+checks:
 
 ```bash
-# Quick verification (< 5 minutes)
-python replication.py
+# Non-graphical check of manuscript tables and quoted values
+python replication.py --tables
 
-# Exact replication of Table 1 (n_sims=100, ~30 minutes)
-python replication.py --full
+# Regenerate manuscript figures
+python replication.py --figures
+
+# Longer fresh Monte Carlo execution check (n_sims=100)
+python replication.py --full --tables
 ```
 
-Pre-computed Monte Carlo results (100 replications per cell) are provided
-in `mc_imse_results.csv`. IMSE ratios relative to Simar & Wilson (2023)
-Table F.1 range from 0.94 to 1.29 with median 1.04.
+The manuscript Monte Carlo table is based on the archived `n_sims=100` CSV
+files: `mc_imse_results.csv`, `mc_imse_extra.csv`, and
+`mc_imse_product.csv`. These files support a focused validation against
+selected Simar & Wilson (2023) Table F.1 entries; they are not a full
+replication of the complete Monte Carlo appendix or the original authors'
+unreleased computational code. For the selected scalar LOO-CV validation
+cells reported in the manuscript, IMSE ratios range from 0.88 to 1.29 with
+median 1.02. Fresh quick/full runs are stochastic execution checks and need
+not exactly reproduce each archived Monte Carlo cell.
 
 **Note on bootstrap reproducibility.** All bootstrap procedures
 (`bootstrap_sw`, `bootstrap_panel`, `test_r3_significance`) accept a `seed`
@@ -203,6 +213,17 @@ If you use this package, please cite:
 - Jondrow, J., Lovell, C.A.K., Materov, I.S. & Schmidt, P. (1982).
   On the estimation of technical inefficiency in the stochastic frontier
   production function model. *Journal of Econometrics*, 19(2–3), 233–238.
+
+---
+
+## Acknowledgments and AI Assistance Disclosure
+
+Claude (Anthropic) was used as an AI coding assistant during the preparation
+of this software package, primarily to help revise the Python code, packaging
+structure, documentation, and replication materials in response to journal
+software-review requirements. The research design, econometric methodology,
+analysis, interpretation of results, and manuscript writing remain the sole
+responsibility of the author.
 
 ---
 

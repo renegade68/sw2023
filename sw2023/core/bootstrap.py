@@ -22,11 +22,11 @@ Correct individual CI computation:
   ④ Evaluate estimated moment functions at Z_orig (local_linear eval_points)
   ⑤ Collect phi_hat_b(Z_orig), eff_b(Z_orig) → CI via quantiles
 
-Note: n_jobs>1 (joblib parallelization) is prohibited — causes kernel panic on iMac 2017
+The implementation runs sequentially to keep bootstrap behavior reproducible
+and portable across platforms.
 """
 
 import numpy as np
-import pandas as pd
 
 from .transform  import transform
 from .frontier   import estimate_moments, local_linear
@@ -155,7 +155,7 @@ def bootstrap_sw(X, Y, B=200, alpha=0.05,
 
     Returns
     -------
-    dict:
+    BootstrapResult:
         phi_hat_point      : (n,) original frontier estimates
         phi_hat_ci         : (n, 2) frontier confidence intervals
         eff_mean_point     : float mean efficiency estimate
@@ -168,7 +168,6 @@ def bootstrap_sw(X, Y, B=200, alpha=0.05,
     import gc
     from .model      import SW2023Model
     from .preprocess import preprocess
-    from .transform  import make_direction
 
     X = np.asarray(X, dtype=float)
     Y = np.asarray(Y, dtype=float)
@@ -284,12 +283,12 @@ def bootstrap_panel(X, Y, firm_id, time_id,
 
     Returns
     -------
-    dict: bootstrap_sw result + decomposed transient/persistent efficiency CIs
+    BootstrapResult
+        Cluster bootstrap confidence intervals evaluated at the original
+        observation points.
     """
     import gc
     from ..panel.four_component import PanelSW2023
-    from .preprocess import preprocess
-    from .transform  import make_direction
 
     X       = np.asarray(X, dtype=float)
     Y       = np.asarray(Y, dtype=float)
@@ -363,7 +362,7 @@ def bootstrap_panel(X, Y, firm_id, time_id,
             np.nanpercentile(boot_eff, lo, axis=0),
             np.nanpercentile(boot_eff, hi, axis=0),
         ]),
-        sigma_eta_point      = m0.sigma_eta_,
+        sigma_eta_point      = m0.sigma_u_,
         sigma_eta_ci         = np.column_stack([
             np.nanpercentile(boot_sigma_eta, lo, axis=0),
             np.nanpercentile(boot_sigma_eta, hi, axis=0),
@@ -388,7 +387,7 @@ def bootstrap_panel(X, Y, firm_id, time_id,
 def test_r3_significance(X, Y, direction='mean', method='HMS',
                          log_transform=True, standardize=True,
                          bandwidth_method='silverman',
-                         B=499, seed=None, verbose=True):
+                         B=999, seed=None, verbose=True):
     """
     Test whether inefficiency (eta) genuinely depends on observable covariates Z.
 
@@ -413,21 +412,21 @@ def test_r3_significance(X, Y, direction='mean', method='HMS',
     direction        : Direction vector
     method           : 'HMS' | 'SVKZ'
     bandwidth_method : Bandwidth method
-    B                : Number of bootstrap iterations (default 499)
+    B                : Number of bootstrap iterations (default 999)
     seed             : Random seed
     verbose          : Print output
 
     Returns
     -------
-    dict:
+    SignificanceTestResult:
         statistic : float  observed test statistic T
         p_value   : float  bootstrap p-value
         r3_hat    : (n,)   estimated r_hat_3(Z)
+        T_boot    : (B,)   bootstrap distribution of T
         B         : int
     """
     import gc
     from .model      import SW2023Model
-    from .preprocess import preprocess
 
     if verbose:
         print("Inefficiency significance test (PSVKZ Wild Bootstrap)...")

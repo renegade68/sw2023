@@ -116,7 +116,7 @@ def _compute_XtWX_batch(K, Z, ZZT, reg):
     n, d = Z.shape
 
     S00 = K.sum(axis=1)                          # (n,)
-    KZ  = K @ Z                                  # (n, d)  — BLAS
+    KZ  = np.einsum('ij,jk->ik', K, Z, optimize=True)
     KZZ = np.einsum('ij,jkl->ikl', K, ZZT)      # (n, d, d)
 
     cross    = KZ - S00[:, None] * Z             # (n, d)
@@ -152,8 +152,8 @@ def _compute_XtWy_batch(K, Z, y):
     -------
     XtWy : (n, d+1)
     """
-    Ky  = K @ y                           # (n,)   — BLAS
-    KZy = K @ (Z * y[:, None])           # (n, d) — BLAS
+    Ky  = np.einsum('ij,j->i', K, y, optimize=True)
+    KZy = np.einsum('ij,jk->ik', K, Z * y[:, None], optimize=True)
 
     XtWy = np.empty((K.shape[0], Z.shape[1] + 1))
     XtWy[:, 0]  = Ky
@@ -276,7 +276,7 @@ def _build_normal_eq_external(K, Z_data, Z_eval, y, ZZT, reg):
     """Construct XtWX, XtWy for the case eval_points ≠ Z_data."""
     d  = Z_data.shape[1]
     S00 = K.sum(axis=1)
-    KZ  = K @ Z_data
+    KZ  = np.einsum('ij,jk->ik', K, Z_data, optimize=True)
     KZZ = np.einsum('ij,jkl->ikl', K, ZZT)
     cross    = KZ - S00[:, None] * Z_eval
     Z0_outer = np.einsum('ik,il->ikl', Z_eval, Z_eval)
@@ -288,8 +288,8 @@ def _build_normal_eq_external(K, Z_data, Z_eval, y, ZZT, reg):
     XtWX[:, 1:, 0]  = cross
     XtWX[:, 1:, 1:] = KZZ - KZ_Z0T - Z0_KZT + S00[:, None, None] * Z0_outer
     XtWX += reg
-    Ky  = K @ y
-    KZy = K @ (Z_data * y[:, None])
+    Ky  = np.einsum('ij,j->i', K, y, optimize=True)
+    KZy = np.einsum('ij,jk->ik', K, Z_data * y[:, None], optimize=True)
     XtWy = np.empty((K.shape[0], d+1))
     XtWy[:, 0]  = Ky
     XtWy[:, 1:] = KZy - Z_eval * Ky[:, None]
@@ -303,10 +303,11 @@ def estimate_moments(Z, U, h=None, bandwidth_method='silverman', chunk_size=512)
     bandwidth_method='silverman' (default):
       Compute K, XtWX once and reuse for r1, r2, r3.
 
-    bandwidth_method='loocv' (SW 2023 paper approach, recommended):
+    bandwidth_method='loocv':
       Per-dimension product-kernel LOO-CV (coordinate descent).
-      Selects d independent bandwidths per regression — consistent with
-      SW(2023) Table G.2.  K, XtWX are computed 3 × d times.
+      Selects d independent bandwidths per regression, matching the
+      published per-dimension bandwidth structure and bounds described in
+      SW(2023).  K, XtWX are computed 3 × d times.
 
     bandwidth_method='loocv_scalar' (legacy scalar LOO-CV):
       Single scalar multiplier c; h_k = c × h_ref_k  (proportional scaling).
@@ -335,7 +336,7 @@ def estimate_moments(Z, U, h=None, bandwidth_method='silverman', chunk_size=512)
     if bandwidth_method in ('loocv', 'loocv_scalar'):
         # ── LOO-CV: independently per regression ────────────────────────
         if bandwidth_method == 'loocv':
-            # Per-dimension product kernel  (SW(2023) Table G.2 consistent)
+            # Per-dimension product kernel with published SW(2023)-style bounds.
             from .bandwidth import bandwidth_loocv_product as _bw_fn
         else:
             # Scalar multiplier (legacy, proportional scaling)

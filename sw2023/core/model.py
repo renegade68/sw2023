@@ -219,7 +219,7 @@ class SW2023Model:
 
         Returns
         -------
-        dict:
+        ConfintResult:
             phi_hat_ci  : (n, 2)
             r1_ci       : (n, 2)
             r3_ci       : (n, 2)

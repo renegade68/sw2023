@@ -21,6 +21,7 @@ References:
   Parmeter & Kumbhakar(2025): 4-component validation
 """
 
+import os
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr, halfnorm
@@ -317,9 +318,7 @@ def run_mc_2component(n_sims=50, n=500, p=2, q=2,
       2. Estimate SW2023Model
       3. Compute efficiency validation metrics
     """
-    import sys, os
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-    from core.model import SW2023Model
+    from ..core.model import SW2023Model
 
     results = []
 
@@ -370,9 +369,7 @@ def run_mc_native(n_sims=50, n=500, p=2, q=2,
 
     Provides cleaner validation results since there is no DGP-model mismatch.
     """
-    import sys, os
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-    from core.model import SW2023Model
+    from ..core.model import SW2023Model
 
     results = []
 
@@ -425,9 +422,7 @@ def run_mc_4component(n_sims=50, N=100, T=5, p=2, q=2,
     """
     4-component panel Monte Carlo experiment.
     """
-    import sys, os
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-    from panel.four_component import PanelSW2023
+    from ..panel.four_component import PanelSW2023
 
     results = []
 
@@ -542,8 +537,8 @@ def dgp_sw_sphere(n, p, q, sigma_eta=0.5, rho=1.0, seed=42):
     V = null_space(d.reshape(1, -1))   # (r, r-1): basis orthogonal to d
 
     # ── 5. Frontier → (Z^∂, U^∂) transform ───────────────────
-    U_star = W_star @ d         # (n,)
-    Z_star = W_star @ V         # (n, r-1)
+    U_star = np.einsum('ij,j->i', W_star, d, optimize=True)
+    Z_star = np.einsum('ij,jk->ik', W_star, V, optimize=True)
 
     # ── 6. Determine σ_ε (SW paper eq. F.1) ──────────────────
     sigma_eps = rho * np.sqrt((np.pi - 2) / np.pi) * sigma_eta
@@ -559,7 +554,8 @@ def dgp_sw_sphere(n, p, q, sigma_eta=0.5, rho=1.0, seed=42):
     Z_obs = Z_star.copy()
 
     # ── 9. (Z, U) → (X, Y) inverse transform ──────────────────
-    W_obs = Z_obs @ V.T + U_obs[:, None] * d[None, :]
+    W_obs = (np.einsum('ij,kj->ik', Z_obs, V, optimize=True)
+             + U_obs[:, None] * d[None, :])
     X_obs = W_obs[:, :p]
     Y_obs = W_obs[:, p:]
 
@@ -604,9 +600,8 @@ def run_imse_grid(n_sims=100,
     -------
     pd.DataFrame : IMSE grid results + paper Table F.1 values (if available)
     """
-    import gc, os, sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-    from core.model import SW2023Model
+    import gc
+    from ..core.model import SW2023Model
 
     if n_list   is None: n_list   = [100, 200, 400, 800]
     if pq_list  is None: pq_list  = [(1,1), (2,2)]
@@ -781,7 +776,8 @@ def run_mc_grid(n_sims=30,
     """
     Sample size × (p,q) dimension × σ_u/σ_v ratio grid Monte Carlo experiment.
 
-    For comparison with SW(2023) Appendix F.  n_jobs=1 sequential execution (prevents kernel panic).
+    For comparison with SW(2023) Appendix F. The implementation is sequential
+    for portability and reproducibility.
 
     Parameters
     ----------
@@ -797,9 +793,8 @@ def run_mc_grid(n_sims=30,
     -------
     pd.DataFrame : full grid results
     """
-    import gc, os, sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-    from core.model import SW2023Model
+    import gc
+    from ..core.model import SW2023Model
 
     if n_list    is None: n_list    = [300, 500, 1000]
     if pq_list   is None: pq_list   = [(1, 1), (2, 2), (3, 2)]
@@ -986,7 +981,7 @@ if __name__ == '__main__':
                                  verbose=True)
 
     elif mode == 'grid':
-        # Grid experiment (n_jobs=1 sequential, resumable)
+        # Grid experiment (sequential, resumable)
         print("=" * 55)
         print("Monte Carlo Grid Experiment (SW 2023 Appendix F comparison)")
         print("=" * 55)

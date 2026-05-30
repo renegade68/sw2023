@@ -1,15 +1,16 @@
 """
 Bandwidth Selection
 
-SW(2023) paper approach:
+SW(2023)-style LOO-CV bandwidth selection:
   Leave-One-Out Cross-Validation (LOO-CV)
   - Independently optimized for each of U ~ Z, ε̂² ~ Z, ε̂³ ~ Z regressions
-  - Per-dimension product kernel: h_k selected independently for k=1,...,d
-    (consistent with SW(2023) Table G.2 Banking Application)
+  - Per-dimension product kernel: h_k selected independently for k=1,...,d,
+    matching the published bandwidth structure and bounds described in
+    SW(2023)'s banking application
   - Lower bound: 0.1 × σ̂_k × n^{-1/(d+4)}
   - Upper bound: 3 × [max(Z_k) - min(Z_k)]
 
-  bandwidth_loocv_product (recommended, SW(2023)-consistent):
+  bandwidth_loocv_product (recommended product-kernel variant):
     Coordinate descent over h_k; K[i,j] = ∏_k exp(-½((Z_ik-Z_jk)/h_k)²)
 
   bandwidth_loocv (legacy):
@@ -20,7 +21,7 @@ Hat-matrix LOO trick:
   h_{ii} = [(XtWX_i)^{-1}]_{00}   (holds since K[i,i]=1)
   → LOO-CV can be computed in O(n²) without n re-fits
 
-Reference: Fan & Gijbels (1996) Ch.4, Simar & Wilson (2023) Sec.4, Table G.2
+Reference: Fan & Gijbels (1996) Ch.4, Simar & Wilson (2023) Sec.4.
 """
 
 import numpy as np
@@ -266,7 +267,7 @@ def bandwidth_silverman(Z):
 
 
 # ─────────────────────────────────────────────────────────────
-# Per-dimension product-kernel LOO-CV (SW 2023 Table G.2)
+# Per-dimension product-kernel LOO-CV (SW 2023-style bounds)
 # ─────────────────────────────────────────────────────────────
 
 def bandwidth_loocv_product(Z, y, h_ref=None, n_grid=10, max_iter=5,
@@ -275,7 +276,8 @@ def bandwidth_loocv_product(Z, y, h_ref=None, n_grid=10, max_iter=5,
     Per-dimension LOO-CV bandwidth (true product kernel).
 
     Independently optimizes h_k for each dimension k via coordinate descent,
-    consistent with SW(2023) Table G.2 which reports d separate bandwidths.
+    matching the published per-dimension bandwidth structure in SW(2023),
+    which reports separate bandwidths.
 
     Kernel: K[i,j] = exp(-0.5 × Σ_k ((Z_ik - Z_jk) / h_k)²)
             = ∏_k exp(-0.5 × ((Z_ik - Z_jk) / h_k)²)
