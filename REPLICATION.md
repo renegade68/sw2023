@@ -14,17 +14,22 @@ Frontier Analysis in Python. *Journal of Statistical Software* (submitted).
 | `REPLICATION.md` | This file |
 | `requirements.txt` | Python package dependencies |
 | `mc_imse_results.csv` | Pre-computed Monte Carlo results — scalar LOO-CV (Table 1) |
+| `mc_imse_extra.csv` | Pre-computed scalar LOO-CV extension results for larger `(p,q)` settings |
 | `mc_imse_product.csv` | Pre-computed Monte Carlo results — product LOO-CV (Table 2) |
 | `norway_for_python.csv` | Norwegian agricultural panel data (Section 7) |
+| `norway_loocv_comparison.csv` | Pre-computed Norway bandwidth comparison data used for Figure 3 |
+| `viz_rotation_3d.py` | Source script for the direction-vector rotation figure |
 
 The `sw2023` package is submitted separately as an installable tarball
-(`sw2023-0.3.2.tar.gz`).  See Step 1 below.
+(`sw2023-0.3.2.tar.gz`).  Place the tarball in the same directory as this
+file before installing the requirements.
 
 ---
 
 ## Requirements
 
 - Python >= 3.8
+- sw2023 0.3.2 (installed from the accompanying source tarball)
 - numpy >= 1.21
 - scipy >= 1.7
 - pandas >= 1.3
@@ -34,35 +39,36 @@ The `sw2023` package is submitted separately as an installable tarball
 
 ## How to Run
 
-**Step 1.** Install the `sw2023` package from the accompanying tarball:
-
-```bash
-pip install sw2023-0.3.2.tar.gz
-```
-
-Or, equivalently, from PyPI:
-
-```bash
-pip install sw2023==0.3.2
-```
-
-To install all dependencies at once:
+**Step 1.** Install the package and dependencies:
 
 ```bash
 pip install -r requirements.txt
-pip install sw2023-0.3.2.tar.gz
+```
+
+The first line of `requirements.txt` installs the accompanying source tarball:
+
+```text
+./sw2023-0.3.2.tar.gz
+```
+
+If the tarball is not in the same directory, install it explicitly before
+running the replication script:
+
+```bash
+pip install /path/to/sw2023-0.3.2.tar.gz
+pip install -r requirements.txt
 ```
 
 **Step 2.** Unzip the replication archive and run the script:
 
 ```bash
 unzip sw2023_replication.zip
-cd sw2023_replication
+# Make sure sw2023-0.3.2.tar.gz is in this directory.
 
 # Quick verification — < 10 minutes (n_sims=20, n up to 400)
 python replication.py
 
-# Full replication — ~ 60 minutes (n_sims=100, n up to 800, matches paper)
+# Longer fresh execution check — ~ 60 minutes (n_sims=100)
 python replication.py --full
 
 # Tables only (skip figure generation)
@@ -78,16 +84,29 @@ python replication.py --figures
 
 ### Tables 1 & 2 — Monte Carlo Validation (Section 5)
 
-The script runs a fresh Monte Carlo experiment and **generates** the CSV
-files, then displays the pre-computed reference values.
+The script reports two Monte Carlo outputs.  The Monte Carlo exercise is a
+focused implementation validation against selected published Table F.1 entries,
+not a full replication of the entire Simar and Wilson Monte Carlo appendix.
 
-- **Table 1** (`mc_imse_results.csv`): IMSE ratios for scalar LOO-CV
-  bandwidth, (p,q) ∈ {(1,1),(1,2),(2,1),(2,2)}, n ∈ {100,200,400,**800**}
-  with `--full`, ρ = 0.
+First, it prints the pre-computed Monte Carlo results used in the manuscript
+(`n_sims=100`). These values are stored in the accompanying CSV files and
+allow exact reproduction of the numerical values reported in this manuscript.
+The original authors' computational code and optimizer settings were not
+publicly available, so the validation is based on the published mathematical
+specification and reference table values.
+
+Second, it performs a fresh Monte Carlo run as an executable check. By default
+this quick run uses `n_sims=20` and writes `*_quick.csv` files. These fresh
+quick-run values are stochastic checks of the code path and are not expected
+to match the manuscript tables cell by cell. Running `python replication.py
+--full` performs a longer fresh check with `n_sims=100` and writes
+`*_full.csv` files.
+
+- **Table 1** (`mc_imse_results.csv`, `mc_imse_extra.csv`): IMSE ratios
+  for scalar LOO-CV bandwidth, (p,q) ∈ {(1,1),(1,2),(2,2),(2,3),(3,3)},
+  n ∈ {100,200,400}, ρ = 0.
 - **Table 2** (`mc_imse_product.csv`): Same configurations with product
-  LOO-CV bandwidth.
-
-With `--full` (n_sims=100, n up to 800), results match the paper exactly.
+  LOO-CV bandwidth for (p,q) ∈ {(1,1),(2,2)} and ρ ∈ {0,0.5,1,2}.
 
 ### Table 3 — Simulation-Based Illustration (Section 6)
 
@@ -104,6 +123,7 @@ Expected output (key figures):
 | Mean SE(phi_hat) | 0.3745 |
 | Mean CI width (bootstrap) | 2.0043 |
 | Wild bootstrap p-value | 0.8819 (seed=2023, B=999; H0 not rejected) |
+| Bootstrap T range | [0.0144, 0.2358] |
 
 ### Table 4 — Norwegian Agricultural Panel (Section 7)
 
@@ -120,6 +140,16 @@ Expected output (key figures):
 | Wrong-skewness proportion | 50.6% |
 | Mean transient efficiency (TE) | 0.961 |
 | Mean persistent efficiency (PE) | 0.978 |
+
+### Figures
+
+Running `python replication.py --figures` reproduces the manuscript figures:
+
+- `fig_rotation_3d.pdf/png` from `viz_rotation_3d.py`.
+- `fig_synthetic_comparison.pdf/png` from the synthetic simulation in
+  `replication.py`.
+- `fig_norway_comparison.pdf/png` from `norway_for_python.csv` and the
+  pre-computed `norway_loocv_comparison.csv`.
 
 ---
 

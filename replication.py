@@ -8,15 +8,24 @@ Reproduces all numerical results and figures reported in the manuscript.
 
 Usage
 -----
-  python replication.py              # Quick mode  : Tables 1–4 + Figures (n_sims=20)
-  python replication.py --full       # Full mode   : Tables 1–4 + Figures (n_sims=100)
+  python replication.py              # Quick mode  : Tables 1–4 + Figures
+  python replication.py --full       # Full mode   : Tables 1–4 + Figures
   python replication.py --tables     # Tables only (skip figures)
   python replication.py --figures    # Figures only (skip Monte Carlo)
 
 Runtime (approximate, single core)
 -----------------------------------
-  Quick  (--quick)  : < 10 minutes
-  Full   (--full)   : ~ 60 minutes  (n_sims=100, n up to 800)
+  Quick  (default) : < 10 minutes (fresh Monte Carlo check, n_sims=20)
+  Full   (--full)  : ~ 60 minutes (fresh Monte Carlo check, n_sims=100)
+
+Monte Carlo reproducibility
+---------------------------
+  The manuscript Monte Carlo tables are reproduced from the accompanying
+  pre-computed CSV files (mc_imse_results.csv, mc_imse_extra.csv, and
+  mc_imse_product.csv).
+  The script also runs a fresh Monte Carlo check.  In quick mode this uses
+  n_sims=20 and writes *_quick.csv files; these stochastic check values are
+  not expected to match the manuscript tables cell by cell.
 
 Package versions used in the manuscript
 ----------------------------------------
@@ -26,6 +35,7 @@ Package versions used in the manuscript
 
 import sys
 import os
+import runpy
 import numpy as np
 import pandas as pd
 
@@ -68,50 +78,69 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # TABLES 1 & 2 — Monte Carlo Validation
 #
 # Reproduces IMSE ratios relative to Simar & Wilson (2023) Table F.1.
-# Table 1: scalar LOO-CV bandwidth  (mc_imse_results.csv)
-# Table 2: product LOO-CV bandwidth (mc_imse_product.csv)
+# Manuscript values are read from pre-computed CSV files.  Fresh quick/full
+# Monte Carlo checks are written to separate *_quick.csv or *_full.csv files.
 # =============================================================================
 if RUN_TABLES:
     print("\n" + "=" * W)
     print("Tables 1 & 2 — Monte Carlo Validation")
     print(f"  DGP   : Marsaglia (1972) sphere, sigma_eta=0.5")
-    print(f"  (p,q) : (1,1), (1,2), (2,1), (2,2)")
-    print(f"  n     : 100, 200, 400" + (", 800" if FULL else " (add --full for n=800)"))
-    print(f"  n_sims: {N_SIMS}" + ("  [paper: 100]" if not FULL else "  [paper]"))
+    print(f"  (p,q) : base scalar CSV covers (1,1), (1,2), (2,1), (2,2)")
+    print(f"          extra scalar CSV covers (2,3), (3,3) at rho=0")
+    print(f"  n     : 100, 200, 400" + (", 800 in fresh full check" if FULL else ""))
+    print(f"  Fresh run n_sims: {N_SIMS}"
+          + ("  [execution check; manuscript CSV uses n_sims=100]"
+             if not FULL else "  [manuscript-scale check]"))
     print("=" * W)
 
     n_list = [100, 200, 400, 800] if FULL else [100, 200, 400]
 
     # ── Table 1: Scalar LOO-CV ────────────────────────────────────────────────
-    print("\n-- Table 1: Scalar LOO-CV bandwidth --")
+    print("\n-- Fresh Monte Carlo check: scalar LOO-CV bandwidth --")
     np.random.seed(2023)
-    csv_scalar = os.path.join(HERE, "mc_imse_results.csv")
+    csv_scalar_ref = os.path.join(HERE, "mc_imse_results.csv")
+    csv_scalar_run = os.path.join(
+        HERE, "mc_imse_results_full.csv" if FULL else "mc_imse_results_quick.csv")
     try:
         df_t1 = run_imse_grid(
             pq_list=[(1,1), (1,2), (2,1), (2,2)],
             n_list=n_list,
             rho_list=[0.0],
             n_sims=N_SIMS,
-            bandwidth_method='loocv',
-            out_csv=csv_scalar,
+            bandwidth_method='loocv_scalar',
+            out_csv=csv_scalar_run,
             verbose=False,
         )
         print()
         print_imse_comparison(df_t1)
-        print(f"\n  → Saved: {csv_scalar}")
+        print(f"\n  → Fresh check saved: {csv_scalar_run}")
     except Exception as e:
         print(f"  [ERROR] Monte Carlo (scalar): {e}")
 
-    # ── Pre-computed reference (n_sims=100) ──────────────────────────────────
-    if os.path.exists(csv_scalar):
-        print("\n-- Table 1 (pre-computed, n_sims=100, paper values) --")
-        ref = pd.read_csv(csv_scalar)
+    # ── Pre-computed manuscript values (n_sims=100) ──────────────────────────
+    if os.path.exists(csv_scalar_ref):
+        print("\n-- Table 1 manuscript values (pre-computed, n_sims=100) --")
+        ref = pd.read_csv(csv_scalar_ref)
         print(ref.to_string(index=False))
+    else:
+        print(f"\n  [WARN] Pre-computed manuscript file not found: {csv_scalar_ref}")
+
+    csv_extra_ref = os.path.join(HERE, "mc_imse_extra.csv")
+    if os.path.exists(csv_extra_ref):
+        print("\n-- Table 1 extension values (pre-computed; rho=0 manuscript cells) --")
+        ext = pd.read_csv(csv_extra_ref)
+        ext_rho0 = ext[(ext["rho"] == 0.0) & (ext["ref_paper"].notna())].copy()
+        ext_rho0["ratio"] = ext_rho0["imse_mean"] / ext_rho0["ref_paper"]
+        print(ext_rho0.to_string(index=False, float_format=lambda x: f"{x:.6g}"))
+    else:
+        print(f"\n  [WARN] Extra Monte Carlo file not found: {csv_extra_ref}")
 
     # ── Table 2: Product LOO-CV ───────────────────────────────────────────────
-    print("\n-- Table 2: Product LOO-CV bandwidth --")
+    print("\n-- Fresh Monte Carlo check: product LOO-CV bandwidth --")
     np.random.seed(2023)
-    csv_product = os.path.join(HERE, "mc_imse_product.csv")
+    csv_product_ref = os.path.join(HERE, "mc_imse_product.csv")
+    csv_product_run = os.path.join(
+        HERE, "mc_imse_product_full.csv" if FULL else "mc_imse_product_quick.csv")
     try:
         df_t2 = run_imse_grid(
             pq_list=[(1,1), (1,2), (2,1), (2,2)],
@@ -119,19 +148,21 @@ if RUN_TABLES:
             rho_list=[0.0],
             n_sims=N_SIMS,
             bandwidth_method='loocv',   # product kernel inside run_imse_grid
-            out_csv=csv_product,
+            out_csv=csv_product_run,
             verbose=False,
         )
         print()
         print_imse_comparison(df_t2)
-        print(f"\n  → Saved: {csv_product}")
+        print(f"\n  → Fresh check saved: {csv_product_run}")
     except Exception as e:
         print(f"  [ERROR] Monte Carlo (product): {e}")
 
-    if os.path.exists(csv_product):
-        print("\n-- Table 2 (pre-computed, n_sims=100, paper values) --")
-        prd = pd.read_csv(csv_product)
+    if os.path.exists(csv_product_ref):
+        print("\n-- Table 2 manuscript values (pre-computed, n_sims=100) --")
+        prd = pd.read_csv(csv_product_ref)
         print(prd.to_string(index=False))
+    else:
+        print(f"\n  [WARN] Pre-computed manuscript file not found: {csv_product_ref}")
 
 
 # =============================================================================
@@ -203,13 +234,13 @@ if RUN_TABLES:
 # =============================================================================
 # TABLE 4 — Norwegian Agricultural Panel (Section 7)
 #
-# Data: norway_for_python.csv  (Kumbhakar et al. 2015, n=2729, T=10)
+# Data: norway_for_python.csv  (Kumbhakar et al. 2015, n=2729, T=9)
 # Reproduces Table 3 (cross-sectional summary) and Table 4 (yearly TE/PE).
 # =============================================================================
 if RUN_TABLES:
     print("\n" + "=" * W)
     print("Table 4 — Norwegian Agricultural Panel (Section 7)")
-    print("  Data : norway_for_python.csv  (n=2,729, 1993–2002)")
+    print("  Data : norway_for_python.csv  (n=2,729, 1998–2006)")
     print("=" * W)
 
     data_path = os.path.join(HERE, "norway_for_python.csv")
@@ -264,8 +295,9 @@ if RUN_TABLES:
 # =============================================================================
 # FIGURES — Reproduce all manuscript figures
 #
-# Figure 1: Synthetic data — frontier estimates (3 bandwidth methods)
-# Figure 2: Norwegian data — efficiency distributions + yearly trend
+# Figure 1: Direction-vector rotation, p=1, q=2
+# Figure 2: Synthetic data — frontier estimates (3 bandwidth methods)
+# Figure 3: Norwegian data — efficiency distributions + yearly trend
 # =============================================================================
 if RUN_FIGURES:
     print("\n" + "=" * W)
@@ -297,8 +329,22 @@ if RUN_FIGURES:
         'loocv'       : '#1a9850',
     }
 
-    # ── Figure 1: Synthetic data ──────────────────────────────────────────────
-    print("\n-- Figure 1: Synthetic data (p=1, q=1, n=300) --")
+    # ── Figure 1: Direction-vector rotation ──────────────────────────────────
+    print("\n-- Figure 1: Direction-vector rotation (p=1, q=2) --")
+    rot_script = os.path.join(HERE, "viz_rotation_3d.py")
+    if not os.path.exists(rot_script):
+        print(f"  [SKIP] {rot_script} not found.")
+    else:
+        cwd = os.getcwd()
+        try:
+            os.chdir(HERE)
+            runpy.run_path(rot_script, run_name="__main__")
+        finally:
+            os.chdir(cwd)
+        print("  → Saved: fig_rotation_3d.pdf/png")
+
+    # ── Figure 2: Synthetic data ──────────────────────────────────────────────
+    print("\n-- Figure 2: Synthetic data (p=1, q=1, n=300) --")
     np.random.seed(2023)
     n_fig = 300
     x_raw   = np.sort(np.random.uniform(1, 5, n_fig))
@@ -364,11 +410,12 @@ if RUN_FIGURES:
     plt.close(fig1)
     print(f"  → Saved: fig_synthetic_comparison.pdf/png")
 
-    # ── Figure 2: Norway data ─────────────────────────────────────────────────
-    print("\n-- Figure 2: Norwegian agricultural panel --")
+    # ── Figure 3: Norway data ─────────────────────────────────────────────────
+    print("\n-- Figure 3: Norwegian agricultural panel --")
     loocv_csv = os.path.join(HERE, "norway_loocv_comparison.csv")
     if not os.path.exists(loocv_csv):
-        print(f"  [SKIP] {loocv_csv} not found — run run_loocv_comparison.py first.")
+        print(f"  [SKIP] {loocv_csv} not found.")
+        print("         This pre-computed file is required to reproduce fig_norway_comparison.")
     else:
         df_fig2 = pd.read_csv(loocv_csv)
 
@@ -389,7 +436,7 @@ if RUN_FIGURES:
             ax.axvline(vals.mean(), color=color, ls=ls, lw=0.8, alpha=0.7)
         ax.set_xlabel('Efficiency score')
         ax.set_ylabel('Density')
-        ax.set_title('(a) Efficiency distributions\nNorwegian farms, 1993–2002  ($n=2{,}729$)')
+        ax.set_title('(a) Efficiency distributions\nNorwegian farms, 1998–2006  ($n=2{,}729$)')
         ax.legend(frameon=False)
         ax.set_xlim(0.1, 1.05)
 
@@ -426,5 +473,5 @@ if RUN_FIGURES:
 print("\n" + "=" * W)
 print("Replication complete.")
 if not FULL and RUN_TABLES:
-    print("  Note: Run with --full for n=800 and n_sims=100 (paper Tables 1–2).")
+    print("  Note: Run with --full for a longer n_sims=100 fresh execution check.")
 print("=" * W)

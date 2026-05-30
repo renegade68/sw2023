@@ -10,10 +10,18 @@ Changelog
 - Added diagnostic plot methods: :meth:`SW2023Model.plot_efficiency`,
   :meth:`SW2023Model.plot_frontier`, :meth:`SW2023Model.plot_diagnostics`.
 - Added :func:`plot_residuals` and :func:`plot_diagnostics` to visualization module.
-- Added :meth:`SW2023Model.__repr__`.
+- Added human-readable ``__repr__`` output for :class:`SW2023Model` and
+  :class:`PanelSW2023`.
+- Updated panel bootstrap compatibility with the panel model bandwidth
+  argument and result dataframe output.
 - Bootstrap functions now accept ``seed`` argument for reproducibility.
 - ``test_r3_significance`` default ``B`` increased to 999.
 - ``pyproject.toml``: SPDX license expression, ``MANIFEST.in`` added.
+- Updated online documentation and replication instructions for the revised
+  source tarball, ``requirements.txt`` installation workflow, Python 3.13
+  checks, manuscript figure generation, and the distinction between
+  pre-computed focused-validation Monte Carlo values and fresh quick/full
+  execution checks.
 
 0.3.1 (2025)
 ------------

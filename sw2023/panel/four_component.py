@@ -26,15 +26,10 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm as scipy_norm
 
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
-from core.transform  import make_direction, transform
-from core.frontier   import estimate_moments, local_linear, _bandwidth_silverman
-from core.decompose  import (A3_PLUS, A3_MINUS,
-                              estimate_sigma_eta, estimate_sigma_eps,
-                              estimate_frontier)
-from core.preprocess import preprocess
+from ..core.transform  import make_direction, transform
+from ..core.frontier   import estimate_moments, local_linear, _bandwidth_silverman
+from ..core.decompose  import estimate_sigma_eta, estimate_sigma_eps
+from ..core.preprocess import preprocess
 
 PI = np.pi
 
@@ -116,11 +111,14 @@ class PanelSW2023:
     h          : bandwidth (None = Silverman)
     log_transform : bool
     standardize   : bool
+    bandwidth_method : {'silverman', 'loocv', 'loocv_scalar'}
+        Bandwidth selection method for pooled moment estimation.
     """
 
     def __init__(self, X, Y, firm_id, time_id,
                  direction='mean', method='HMS', h=None,
-                 log_transform=True, standardize=True):
+                 log_transform=True, standardize=True,
+                 bandwidth_method='silverman'):
         self.X_raw     = np.asarray(X, dtype=float)
         self.Y_raw     = np.asarray(Y, dtype=float)
         self.firm_id   = np.asarray(firm_id)
@@ -130,7 +128,22 @@ class PanelSW2023:
         self.h         = h
         self.log_transform = log_transform
         self.standardize   = standardize
+        self.bandwidth_method = bandwidth_method
         self._fitted   = False
+
+    def __repr__(self):
+        n = len(self.X_raw) if hasattr(self, 'X_raw') else '?'
+        p = self.X_raw.shape[1] if hasattr(self, 'X_raw') else '?'
+        q = self.Y_raw.shape[1] if hasattr(self, 'Y_raw') else '?'
+        n_firms = len(np.unique(self.firm_id)) if hasattr(self, 'firm_id') else '?'
+        if not self._fitted:
+            return (f"PanelSW2023(n={n}, firms={n_firms}, p={p}, q={q}, "
+                    f"method='{self.method}', not fitted)")
+        return (f"PanelSW2023(n={n}, firms={n_firms}, p={p}, q={q}, "
+                f"method='{self.method}', "
+                f"mean_eff={np.nanmean(self.efficiency_):.4f}, "
+                f"mean_TE={np.nanmean(self.eff_transient_):.4f}, "
+                f"mean_PE={np.nanmean(self.eff_persistent_):.4f})")
 
     # ── Main estimation ────────────────────────────────────────
     def fit(self, verbose=True):
@@ -170,7 +183,8 @@ class PanelSW2023:
         # 2. Pooled LLLS → φ̂(Z_it), composite residuals ε̂_it
         if verbose:
             print(f"  [Step 1] Estimating pooled LLLS...")
-        moments = estimate_moments(self.Z_, self.U_, h=self.h)
+        moments = estimate_moments(self.Z_, self.U_, h=self.h,
+                                   bandwidth_method=self.bandwidth_method)
         self.r1_   = moments['r1']
         self.h_    = moments['h']
         eps_hat    = moments['eps']   # ε̂_it = U_it - r̂_1(Z_it)
@@ -223,6 +237,8 @@ class PanelSW2023:
         sigma_alp_n = np.array([self.sigma_alp_firm_[firm_idx[f]]
                                  for f in firms])
         b_i_n = np.array([b_i_vals[firm_idx[f]] for f in firms])
+        self.sigma_mu_  = sigma_mu_n
+        self.sigma_alp_ = sigma_alp_n
 
         # 6. Frontier estimation
         #    r̂_1(z) = φ(z) - ||d||(μ_u + μ_μ)
@@ -293,7 +309,7 @@ class PanelSW2023:
             'u_hat'          : self.u_hat_,
             'mu_hat'         : self.mu_hat_,
             'sigma_u'        : self.sigma_u_,
-            'sigma_mu'       : self.b_i_n_,
+            'sigma_mu'       : self.sigma_mu_,
         })
 
         for col in ['efficiency', 'eff_transient', 'eff_persistent']:
@@ -319,6 +335,8 @@ class PanelSW2023:
             'w_it'           : self.w_it_,
             'sigma_u'        : self.sigma_u_,
             'sigma_v'        : self.sigma_v_,
+            'sigma_mu'       : self.sigma_mu_,
+            'sigma_alpha'    : self.sigma_alp_,
             'u_hat'          : self.u_hat_,
             'mu_hat'         : self.mu_hat_,
             'efficiency'     : self.efficiency_,
