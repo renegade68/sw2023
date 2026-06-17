@@ -13,16 +13,17 @@ Frontier Analysis in Python. *Journal of Statistical Software* (submitted).
 | `replication.ipynb` | Replication notebook (Jupyter, inline outputs) |
 | `REPLICATION.md` | This file |
 | `requirements.txt` | Python package dependencies |
-| `mc_imse_results.csv` | Pre-computed Monte Carlo results — scalar LOO-CV (Table 1) |
+| `sw2023-0.3.2.tar.gz` | Submitted source tarball installed by `requirements.txt` |
+| `mc_imse_results.csv` | Pre-computed Monte Carlo results — scalar LOO-CV (manuscript Table 2) |
 | `mc_imse_extra.csv` | Pre-computed scalar LOO-CV extension results for larger `(p,q)` settings |
-| `mc_imse_product.csv` | Pre-computed Monte Carlo results — product LOO-CV (Table 2) |
+| `mc_imse_product.csv` | Pre-computed Monte Carlo results — product LOO-CV (manuscript Table 3) |
 | `norway_for_python.csv` | Norwegian agricultural panel data (Section 7) |
 | `norway_loocv_comparison.csv` | Pre-computed Norway bandwidth comparison data used for Figure 3 |
 | `viz_rotation_3d.py` | Source script for the direction-vector rotation figure |
 
-The `sw2023` package is submitted separately as an installable tarball
-(`sw2023-0.3.2.tar.gz`).  Place the tarball in the same directory as this
-file before installing the requirements.
+The `sw2023` package source tarball (`sw2023-0.3.2.tar.gz`) is included in
+this replication archive and is also submitted separately.  It should remain in
+the same directory as `requirements.txt` before installing the requirements.
 
 ---
 
@@ -130,7 +131,7 @@ manuscript figure files (`fig_rotation_3d.*`, `fig_synthetic_comparison.*`,
 and `fig_norway_comparison.*`).
 
 For ease of comparison with the manuscript, the table log prints compact
-``Manuscript Table 1 ratio layout'' and ``Manuscript Table 2 ratio layout''
+``Manuscript Table 2 ratio layout'' and ``Manuscript Table 3 ratio layout''
 blocks computed from the pre-computed CSV files. These are formatting summaries
 of the archived results, not new estimates.
 
@@ -138,7 +139,7 @@ of the archived results, not new estimates.
 
 ## What the Script Reproduces
 
-### Tables 1 & 2 — Monte Carlo Validation (Section 5)
+### Manuscript Tables 2 & 3 — Monte Carlo Validation (Section 5)
 
 The script reports two Monte Carlo outputs.  The Monte Carlo exercise is a
 focused implementation validation against selected published Table F.1 entries,
@@ -158,16 +159,19 @@ to match the manuscript tables cell by cell. Running `python3 replication.py
 --full` performs a longer fresh check with `n_sims=100` and writes
 `*_full.csv` files.
 
-- **Table 1** (`mc_imse_results.csv`, `mc_imse_extra.csv`): IMSE ratios
+- **Manuscript Table 2** (`mc_imse_results.csv`, `mc_imse_extra.csv`): IMSE ratios
   for scalar LOO-CV bandwidth, (p,q) ∈ {(1,1),(1,2),(2,2),(2,3),(3,3)},
   n ∈ {100,200,400}, ρ = 0.
-- **Table 2** (`mc_imse_product.csv`): Same configurations with product
+- **Manuscript Table 3** (`mc_imse_product.csv`): Same configurations with product
   LOO-CV bandwidth for (p,q) ∈ {(1,1),(2,2)} and ρ ∈ {0,0.5,1,2}.
 
-### Table 3 — Simulation-Based Illustration (Section 6)
+### Section 6 — Simulation-Based Illustration Code Outputs
 
 Reproduces all code-output blocks in Section 6 of the manuscript.
-Random seed is fixed (`np.random.seed(42)`), so results are exactly reproducible.
+The Section 6 simulation sample uses `np.random.seed(42)`. The pairs
+bootstrap and wild bootstrap use the explicit seed `seed=2023`, so the
+reported bootstrap output is reproducible for the submitted package and
+dependency versions.
 
 Expected output (key figures):
 
@@ -181,17 +185,20 @@ Expected output (key figures):
 | Wild bootstrap p-value | 0.8819 (seed=2023, B=999; H0 not rejected) |
 | Bootstrap T range | [0.0144, 0.2358] |
 
-### Tables 4-5 — Norwegian Agricultural Panel (Section 7)
+### Manuscript Tables 4-5 — Norwegian Agricultural Panel (Section 7)
 
 Uses `norway_for_python.csv` (Kumbhakar, Wang & Horncastle 2015).
-Reproduces the Norwegian panel summary and cross-sectional efficiency
-statistics reported with manuscript Table 4, and the yearly
-transient/persistent efficiency means reported in manuscript Table 5.
+Reproduces the Norwegian panel summary statistics reported in manuscript
+Table 4, the cross-sectional efficiency statistics reported in Section 7,
+and the yearly transient/persistent efficiency means reported in manuscript
+Table 5.
 
 Expected output (key figures):
 
 | Output | Expected value |
 |---|---|
+| Table 4 sample size | n = 2,729 farm-year observations, 1998-2006 |
+| Table 4 variable statistics | Mean, Std, Min, Q1, Median, Max for x1-x6 and y1-y4 |
 | Mean efficiency (CS) | 0.813 |
 | Median efficiency (CS) | 0.831 |
 | Wrong-skewness proportion | 50.6% |

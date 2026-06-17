@@ -120,7 +120,7 @@ def _fmt_ratio(x):
 
 
 def print_table1_manuscript_ratios(ref, ext):
-    """Print manuscript Table 1 ratio layout from pre-computed CSV files."""
+    """Print manuscript Table 2 ratio layout from pre-computed CSV files."""
     rows = []
     for p, q in [(1, 1), (1, 2), (2, 2), (2, 3), (3, 3)]:
         src = ext if (p, q) in [(2, 3), (3, 3)] else ref
@@ -136,7 +136,7 @@ def print_table1_manuscript_ratios(ref, ext):
             vals.append(_fmt_ratio(ratio))
         rows.append((f"({p},{q})", *vals))
 
-    print("\n-- Manuscript Table 1 ratio layout (sw2023 / SW2023 Table F.1) --")
+    print("\n-- Manuscript Table 2 ratio layout (sw2023 / SW2023 Table F.1) --")
     print("  (p,q)    n=100   n=200   n=400")
     print("  -------------------------------")
     for row in rows:
@@ -144,7 +144,7 @@ def print_table1_manuscript_ratios(ref, ext):
 
 
 def print_table2_manuscript_ratios(scalar_ref, product_ref):
-    """Print manuscript Table 2 scalar/product ratio layout."""
+    """Print manuscript Table 3 scalar/product ratio layout."""
     rows = []
     for p, q in [(1, 1), (2, 2)]:
         vals = []
@@ -166,7 +166,7 @@ def print_table2_manuscript_ratios(scalar_ref, product_ref):
             vals.append(f"{_fmt_ratio(sr).strip()} / {_fmt_ratio(pr).strip()}")
         rows.append((f"({p},{q})", *vals))
 
-    print("\n-- Manuscript Table 2 ratio layout (scalar / product LOO-CV) --")
+    print("\n-- Manuscript Table 3 ratio layout (scalar / product LOO-CV) --")
     print("  (p,q)       n=100        n=200        n=400")
     print("  --------------------------------------------")
     for row in rows:
@@ -174,7 +174,7 @@ def print_table2_manuscript_ratios(scalar_ref, product_ref):
 
 
 # =============================================================================
-# TABLES 1 & 2 — Monte Carlo Validation
+# TABLES 2 & 3 — Monte Carlo Validation
 #
 # Reproduces IMSE ratios relative to Simar & Wilson (2023) Table F.1.
 # Manuscript values are read from pre-computed CSV files.  Fresh quick/full
@@ -182,7 +182,7 @@ def print_table2_manuscript_ratios(scalar_ref, product_ref):
 # =============================================================================
 if RUN_TABLES:
     print("\n" + "=" * W)
-    print("Tables 1 & 2 — Monte Carlo Validation")
+    print("Tables 2-3 — Monte Carlo Validation")
     print(f"  DGP   : Marsaglia (1972) sphere, sigma_eta=0.5")
     print(f"  (p,q) : base scalar CSV covers (1,1), (1,2), (2,1), (2,2)")
     print(f"          extra scalar CSV covers (2,3), (3,3) at rho=0")
@@ -194,7 +194,7 @@ if RUN_TABLES:
 
     n_list = [100, 200, 400, 800] if FULL else [100, 200, 400]
 
-    # ── Table 1: Scalar LOO-CV ────────────────────────────────────────────────
+    # ── Manuscript Table 2: Scalar LOO-CV ─────────────────────────────────────
     print("\n-- Fresh Monte Carlo check: scalar LOO-CV bandwidth --")
     np.random.seed(2023)
     csv_scalar_ref = os.path.join(HERE, "mc_imse_results.csv")
@@ -219,7 +219,7 @@ if RUN_TABLES:
     # ── Pre-computed manuscript values (n_sims=100) ──────────────────────────
     ref = None
     if os.path.exists(csv_scalar_ref):
-        print("\n-- Table 1 manuscript values (pre-computed, n_sims=100) --")
+        print("\n-- Manuscript Table 2 values (pre-computed, n_sims=100) --")
         ref = pd.read_csv(csv_scalar_ref)
         print(ref.to_string(index=False))
     else:
@@ -228,7 +228,7 @@ if RUN_TABLES:
     csv_extra_ref = os.path.join(HERE, "mc_imse_extra.csv")
     ext = None
     if os.path.exists(csv_extra_ref):
-        print("\n-- Table 1 extension values (pre-computed; rho=0 manuscript cells) --")
+        print("\n-- Manuscript Table 2 extension values (pre-computed; rho=0 manuscript cells) --")
         ext = pd.read_csv(csv_extra_ref)
         ext_rho0 = ext[(ext["rho"] == 0.0) & (ext["ref_paper"].notna())].copy()
         ext_rho0["ratio"] = ext_rho0["imse_mean"] / ext_rho0["ref_paper"]
@@ -239,7 +239,7 @@ if RUN_TABLES:
     if ref is not None and ext is not None:
         print_table1_manuscript_ratios(ref, ext)
 
-    # ── Table 2: Product LOO-CV ───────────────────────────────────────────────
+    # ── Manuscript Table 3: Product LOO-CV ────────────────────────────────────
     print("\n-- Fresh Monte Carlo check: product LOO-CV bandwidth --")
     np.random.seed(2023)
     csv_product_ref = os.path.join(HERE, "mc_imse_product.csv")
@@ -263,7 +263,7 @@ if RUN_TABLES:
 
     prd = None
     if os.path.exists(csv_product_ref):
-        print("\n-- Table 2 manuscript values (pre-computed, n_sims=100) --")
+        print("\n-- Manuscript Table 3 values (pre-computed, n_sims=100) --")
         prd = pd.read_csv(csv_product_ref)
         print(prd.to_string(index=False))
     else:
@@ -274,14 +274,14 @@ if RUN_TABLES:
 
 
 # =============================================================================
-# TABLE 3 — Simulation-Based Illustration (Section 6)
+# SECTION 6 — Simulation-Based Illustration
 #
 # DGP: Marsaglia sphere, p=2, q=2, n=200, sigma_eta=0.5, rho=1.0
 # Reproduces all code-output blocks in Section 6 of the manuscript.
 # =============================================================================
 if RUN_TABLES:
     print("\n" + "=" * W)
-    print("Table 3 — Simulation-Based Illustration (Section 6)")
+    print("Section 6 — Simulation-Based Illustration Code Outputs")
     print("  DGP: Marsaglia sphere, p=q=2, n=200, sigma_eta=0.5, rho=1.0")
     print("=" * W)
 
@@ -301,7 +301,7 @@ if RUN_TABLES:
     Y_sim = Y_sim * np.clip(1 - eta_sim * 0.3 + eps_sim * 0.1, 0.5, 1.5)[:, None]
 
     # ── 6.1 Cross-sectional model ─────────────────────────────────────────────
-    print("\n-- Table 3, Row 1: Cross-sectional model (Silverman bandwidth) --")
+    print("\n-- Section 6.1: Cross-sectional model (Silverman bandwidth) --")
     m_sim = SW2023Model(X_sim, Y_sim, direction='mean', method='HMS',
                         bandwidth_method='silverman')
     m_sim.fit(verbose=False)
@@ -312,7 +312,7 @@ if RUN_TABLES:
     print(f"  Wrong skewness   : {(m_sim.r3_>0).mean()*100:.1f}%")
 
     # ── 6.2 Asymptotic CI ─────────────────────────────────────────────────────
-    print("\n-- Table 3, Row 2: Asymptotic confidence intervals (alpha=0.05) --")
+    print("\n-- Section 6.2: Asymptotic confidence intervals (alpha=0.05) --")
     ci_sim = m_sim.confint_asymptotic(alpha=0.05)
     ci_sim.summary()
     print(f"  Mean SE(phi_hat)        : {ci_sim.se_phi.mean():.4f}   (paper: 0.3745)")
@@ -320,7 +320,7 @@ if RUN_TABLES:
     print(f"  Mean CI upper (phi_hat) : {ci_sim.phi_hat_ci[:,1].mean():.4f}   (paper: 1.4618)")
 
     # ── 6.3 Bootstrap CI ──────────────────────────────────────────────────────
-    print("\n-- Table 3, Row 3: Bootstrap confidence intervals (B=199, seed=2023) --")
+    print("\n-- Section 6.3: Bootstrap confidence intervals (B=199, seed=2023) --")
     boot_sim = bootstrap_sw(X_sim, Y_sim, B=199, alpha=0.05,
                             bandwidth_method='silverman',
                             seed=2023, verbose=False)
@@ -331,7 +331,7 @@ if RUN_TABLES:
     print(f"  Mean eff 95% CI         : [{lo_b:.4f}, {hi_b:.4f}]   (paper: [0.4661, 0.5757])")
 
     # ── 6.4 Wild bootstrap significance test ──────────────────────────────────
-    print("\n-- Table 3, Row 4: Wild bootstrap significance test (B=999, seed=2023) --")
+    print("\n-- Section 6.4: Wild bootstrap significance test (B=999, seed=2023) --")
     tres = test_r3_significance(X_sim, Y_sim, B=999, seed=2023, verbose=False)
     tres.summary()
     print(f"  Test statistic T: {tres.statistic:.4f}   (paper: 0.0397)")
@@ -340,7 +340,7 @@ if RUN_TABLES:
 
 
 # =============================================================================
-# TABLES 4-5 — Norwegian Agricultural Panel (Section 7)
+# MANUSCRIPT TABLES 4-5 — Norwegian Agricultural Panel (Section 7)
 #
 # Data: norway_for_python.csv  (Kumbhakar et al. 2015, n=2729, T=9)
 # Reproduces Table 4 (summary statistics) and Table 5 (yearly TE/PE).
@@ -364,7 +364,30 @@ if RUN_TABLES:
         Y_no = df_no[["y1","y2","y3","y4"]].values
 
         # ── Table 4: Norwegian panel summary statistics ──────────────────────
-        print("\n-- Table 4: Norwegian panel summary statistics and cross-sectional efficiency --")
+        print("\n-- Manuscript Table 4: Norwegian agricultural panel summary statistics --")
+        table4_vars = [
+            ("x1: Land (daa)", "x1"),
+            ("x2: Labour (000 hrs)", "x2"),
+            ("x3: Feed (000 NOK)", "x3"),
+            ("x4: Other var. costs (000 NOK)", "x4"),
+            ("x5: Cattle capital (000 NOK)", "x5"),
+            ("x6: Other capital (000 NOK)", "x6"),
+            ("y1: Milk (000 litres)", "y1"),
+            ("y2: Meat (000 NOK)", "y2"),
+            ("y3: Support payments (000 NOK)", "y3"),
+            ("y4: Other output (000 NOK)", "y4"),
+        ]
+        print("  Variable                         Mean     Std     Min      Q1  Median     Max")
+        print("  -----------------------------------------------------------------------------")
+        for label, col in table4_vars:
+            s = df_no[col]
+            print(
+                f"  {label:<31}"
+                f"{s.mean():7.1f}{s.std():8.1f}{s.min():8.1f}"
+                f"{s.quantile(0.25):8.1f}{s.median():8.1f}{s.max():8.1f}"
+            )
+
+        print("\n-- Section 7 cross-sectional efficiency summary --")
         m_no = SW2023Model(X_no, Y_no, method="HMS",
                            bandwidth_method="silverman")
         m_no.fit(verbose=False)
@@ -377,7 +400,7 @@ if RUN_TABLES:
         print(f"  Wrong-skewness    : {ws_no:.1f}%   (paper: 50.6%)")
 
         # ── Table 5: Yearly TE / PE ──────────────────────────────────────────
-        print("\n-- Table 5: Yearly mean efficiency (CS, TE, PE) --")
+        print("\n-- Manuscript Table 5: Yearly mean efficiency (CS, TE, PE) --")
         m_panel = PanelSW2023(X_no, Y_no,
                               df_no["farmid"].values,
                               df_no["year"].values,
