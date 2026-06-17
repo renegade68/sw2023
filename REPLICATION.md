@@ -39,6 +39,10 @@ file before installing the requirements.
 
 ## How to Run
 
+For operating-system-specific copy-and-paste commands, see the top-level
+`README_REPLICATION.txt` included with the submission archive. The commands
+below use a Unix-style shell (`python3`, `source`/`.` activation, and `unzip`).
+
 **Step 1.** Unzip the replication archive and enter the folder that contains
 `requirements.txt`:
 
