@@ -584,22 +584,26 @@ print(f"  Log file: {LOG_NAME}")
 if not FULL and RUN_TABLES:
     print("  Note: Run with --full for a longer n_sims=100 fresh execution check.")
 generated = []
-for name in [
-    "mc_imse_results_quick.csv",
-    "mc_imse_product_quick.csv",
-    "mc_imse_results_full.csv",
-    "mc_imse_product_full.csv",
-    "fig_rotation_3d.pdf",
-    "fig_rotation_3d.png",
-    "fig_synthetic_comparison.pdf",
-    "fig_synthetic_comparison.png",
-    "fig_norway_comparison.pdf",
-    "fig_norway_comparison.png",
-]:
+expected_outputs = []
+if RUN_TABLES:
+    expected_outputs.extend([
+        "mc_imse_results_full.csv" if FULL else "mc_imse_results_quick.csv",
+        "mc_imse_product_full.csv" if FULL else "mc_imse_product_quick.csv",
+    ])
+if RUN_FIGURES:
+    expected_outputs.extend([
+        "fig_rotation_3d.pdf",
+        "fig_rotation_3d.png",
+        "fig_synthetic_comparison.pdf",
+        "fig_synthetic_comparison.png",
+        "fig_norway_comparison.pdf",
+        "fig_norway_comparison.png",
+    ])
+for name in expected_outputs:
     if os.path.exists(os.path.join(HERE, name)):
         generated.append(name)
 if generated:
-    print("  Generated/updated files:")
+    print("  Generated/updated files for this run:")
     for name in generated:
         print(f"    - {name}")
 print("=" * W)
