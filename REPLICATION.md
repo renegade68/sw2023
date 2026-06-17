@@ -39,10 +39,21 @@ file before installing the requirements.
 
 ## How to Run
 
-**Step 1.** Install the package and dependencies:
+**Step 1.** Unzip the replication archive and enter the folder that contains
+`requirements.txt`:
 
 ```bash
-pip install -r requirements.txt
+unzip sw2023_replication.zip
+cd sw2023_replication  # if the archive was unpacked into a subdirectory
+```
+
+If your system uses `python` for Python 3, replace `python3` with `python`
+throughout the commands below.
+
+**Step 2.** Install the package and dependencies:
+
+```bash
+python3 -m pip install -r requirements.txt
 ```
 
 The first line of `requirements.txt` installs the accompanying source tarball:
@@ -55,27 +66,24 @@ If the tarball is not in the same directory, install it explicitly before
 running the replication script:
 
 ```bash
-pip install /path/to/sw2023-0.3.2.tar.gz
-pip install -r requirements.txt
+python3 -m pip install /path/to/sw2023-0.3.2.tar.gz
+python3 -m pip install -r requirements.txt
 ```
 
-**Step 2.** Unzip the replication archive and run the script:
+**Step 3.** Run the script:
 
 ```bash
-unzip sw2023_replication.zip
-# Make sure sw2023-0.3.2.tar.gz is in this directory.
-
 # Quick verification — < 10 minutes (n_sims=20, n up to 400)
-python replication.py
+python3 replication.py
 
 # Longer fresh execution check — ~ 60 minutes (n_sims=100)
-python replication.py --full
+python3 replication.py --full
 
 # Tables only (skip figure generation)
-python replication.py --full --tables
+python3 replication.py --full --tables
 
 # Figures only (skip Monte Carlo)
-python replication.py --figures
+python3 replication.py --figures
 ```
 
 ---
@@ -98,7 +106,7 @@ specification and reference table values.
 Second, it performs a fresh Monte Carlo run as an executable check. By default
 this quick run uses `n_sims=20` and writes `*_quick.csv` files. These fresh
 quick-run values are stochastic checks of the code path and are not expected
-to match the manuscript tables cell by cell. Running `python replication.py
+to match the manuscript tables cell by cell. Running `python3 replication.py
 --full` performs a longer fresh check with `n_sims=100` and writes
 `*_full.csv` files.
 
@@ -144,7 +152,7 @@ Expected output (key figures):
 
 ### Figures
 
-Running `python replication.py --figures` reproduces the manuscript figures:
+Running `python3 replication.py --figures` reproduces the manuscript figures:
 
 - `fig_rotation_3d.pdf/png` from `viz_rotation_3d.py`.
 - `fig_synthetic_comparison.pdf/png` from the synthetic simulation in
