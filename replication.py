@@ -45,6 +45,36 @@ N_SIMS  = 100 if FULL else 20
 
 RUN_TABLES  = not FIGURES
 RUN_FIGURES = not TABLES
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+class Tee:
+    """Write terminal output to both the console and a log file."""
+
+    def __init__(self, stream, log):
+        self.stream = stream
+        self.log = log
+
+    def write(self, text):
+        self.stream.write(text)
+        self.log.write(text)
+
+    def flush(self):
+        self.stream.flush()
+        self.log.flush()
+
+
+if FIGURES:
+    LOG_NAME = "replication_figures.log"
+elif FULL:
+    LOG_NAME = "replication_tables_full.log" if TABLES else "replication_full.log"
+else:
+    LOG_NAME = "replication_tables_quick.log" if TABLES else "replication_quick.log"
+
+LOG_PATH = os.path.join(HERE, LOG_NAME)
+_log_file = open(LOG_PATH, "w", encoding="utf-8")
+sys.stdout = Tee(sys.stdout, _log_file)
+sys.stderr = Tee(sys.stderr, _log_file)
 
 # ── Header ────────────────────────────────────────────────────────────────────
 W = 65
@@ -83,8 +113,6 @@ print(f"matplotlib  : {matplotlib.__version__}")
 from sw2023 import (SW2023Model, PanelSW2023,
                     bootstrap_sw, test_r3_significance)
 from sw2023.tests.monte_carlo import run_imse_grid, print_imse_comparison
-
-HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 # =============================================================================
@@ -485,6 +513,26 @@ if RUN_FIGURES:
 # ── Footer ────────────────────────────────────────────────────────────────────
 print("\n" + "=" * W)
 print("Replication complete.")
+print(f"  Log file: {LOG_NAME}")
 if not FULL and RUN_TABLES:
     print("  Note: Run with --full for a longer n_sims=100 fresh execution check.")
+generated = []
+for name in [
+    "mc_imse_results_quick.csv",
+    "mc_imse_product_quick.csv",
+    "mc_imse_results_full.csv",
+    "mc_imse_product_full.csv",
+    "fig_rotation_3d.pdf",
+    "fig_rotation_3d.png",
+    "fig_synthetic_comparison.pdf",
+    "fig_synthetic_comparison.png",
+    "fig_norway_comparison.pdf",
+    "fig_norway_comparison.png",
+]:
+    if os.path.exists(os.path.join(HERE, name)):
+        generated.append(name)
+if generated:
+    print("  Generated/updated files:")
+    for name in generated:
+        print(f"    - {name}")
 print("=" * W)

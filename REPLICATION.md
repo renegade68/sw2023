@@ -113,6 +113,18 @@ python3 replication.py --full --tables
 python3 replication.py --figures
 ```
 
+The script automatically writes a log file in the replication folder:
+
+- `replication_tables_quick.log` for `python3 replication.py --tables`
+- `replication_tables_full.log` for `python3 replication.py --full --tables`
+- `replication_figures.log` for `python3 replication.py --figures`
+
+The table run also writes fresh Monte Carlo check CSV files
+(`mc_imse_results_quick.csv` and `mc_imse_product_quick.csv`, or the
+corresponding `_full.csv` files in full mode). The figure run writes the
+manuscript figure files (`fig_rotation_3d.*`, `fig_synthetic_comparison.*`,
+and `fig_norway_comparison.*`).
+
 ---
 
 ## What the Script Reproduces
