@@ -125,11 +125,12 @@ Expected output (key figures):
 | Wild bootstrap p-value | 0.8819 (seed=2023, B=999; H0 not rejected) |
 | Bootstrap T range | [0.0144, 0.2358] |
 
-### Table 4 — Norwegian Agricultural Panel (Section 7)
+### Tables 4-5 — Norwegian Agricultural Panel (Section 7)
 
 Uses `norway_for_python.csv` (Kumbhakar, Wang & Horncastle 2015).
-Reproduces cross-sectional efficiency (Table 3 summary statistics) and
-yearly transient/persistent efficiency means (Table 4).
+Reproduces the Norwegian panel summary and cross-sectional efficiency
+statistics reported with manuscript Table 4, and the yearly
+transient/persistent efficiency means reported in manuscript Table 5.
 
 Expected output (key figures):
 

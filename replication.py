@@ -232,14 +232,14 @@ if RUN_TABLES:
 
 
 # =============================================================================
-# TABLE 4 — Norwegian Agricultural Panel (Section 7)
+# TABLES 4-5 — Norwegian Agricultural Panel (Section 7)
 #
 # Data: norway_for_python.csv  (Kumbhakar et al. 2015, n=2729, T=9)
-# Reproduces Table 3 (cross-sectional summary) and Table 4 (yearly TE/PE).
+# Reproduces Table 4 (summary statistics) and Table 5 (yearly TE/PE).
 # =============================================================================
 if RUN_TABLES:
     print("\n" + "=" * W)
-    print("Table 4 — Norwegian Agricultural Panel (Section 7)")
+    print("Tables 4-5 — Norwegian Agricultural Panel (Section 7)")
     print("  Data : norway_for_python.csv  (n=2,729, 1998–2006)")
     print("=" * W)
 
@@ -255,8 +255,8 @@ if RUN_TABLES:
         X_no = df_no[["x1","x2","x3","x4","x5","x6"]].values
         Y_no = df_no[["y1","y2","y3","y4"]].values
 
-        # ── Table 4a: Cross-sectional summary (paper Table 3) ─────────────────
-        print("\n-- Table 4a: Cross-sectional efficiency summary (paper Table 3) --")
+        # ── Table 4: Norwegian panel summary statistics ──────────────────────
+        print("\n-- Table 4: Norwegian panel summary statistics and cross-sectional efficiency --")
         m_no = SW2023Model(X_no, Y_no, method="HMS",
                            bandwidth_method="silverman")
         m_no.fit(verbose=False)
@@ -268,8 +268,8 @@ if RUN_TABLES:
         print(f"  Min  efficiency   : {eff_no.min():.3f}   (paper: 0.251)")
         print(f"  Wrong-skewness    : {ws_no:.1f}%   (paper: 50.6%)")
 
-        # ── Table 4b: Yearly TE / PE (paper Table 4) ─────────────────────────
-        print("\n-- Table 4b: Yearly mean efficiency (paper Table 4) --")
+        # ── Table 5: Yearly TE / PE ──────────────────────────────────────────
+        print("\n-- Table 5: Yearly mean efficiency (CS, TE, PE) --")
         m_panel = PanelSW2023(X_no, Y_no,
                               df_no["farmid"].values,
                               df_no["year"].values,
