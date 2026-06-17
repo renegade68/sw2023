@@ -17,11 +17,11 @@ Changelog
 - Bootstrap functions now accept ``seed`` argument for reproducibility.
 - ``test_r3_significance`` default ``B`` increased to 999.
 - ``pyproject.toml``: SPDX license expression, ``MANIFEST.in`` added.
-- Updated online documentation and replication instructions for the revised
-  source tarball, ``requirements.txt`` installation workflow, Python 3.13
-  checks, manuscript figure generation, and the distinction between
-  pre-computed focused-validation Monte Carlo values and fresh quick/full
-  execution checks.
+- Updated online documentation and replication instructions for the
+  self-contained replication archive, revised source tarball,
+  ``requirements.txt`` installation workflow, Python 3.13 checks, manuscript
+  figure generation, and the distinction between pre-computed
+  focused-validation Monte Carlo values and fresh quick/full execution checks.
 
 0.3.1 (2025)
 ------------

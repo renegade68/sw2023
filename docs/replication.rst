@@ -3,29 +3,31 @@ Replication
 
 All numerical results in Lee (2026) can be checked using the accompanying
 replication archive. The archive contains the replication script, notebook,
-requirements file, data, and the pre-computed Monte Carlo CSV files used for
-the manuscript tables.
+requirements file, data, the submitted source tarball, and the pre-computed
+Monte Carlo CSV files used for the manuscript tables.
 
 Setup
 -----
 
-Place ``sw2023-0.3.2.tar.gz`` and ``sw2023_replication.zip`` in a clean
-working directory, unzip the replication archive, create a virtual
-environment, and install the package and dependencies from the revised
-``requirements.txt``:
+Unzip the self-contained replication archive, enter the unpacked folder,
+create a virtual environment, and install the package and dependencies from
+the included ``requirements.txt``:
 
 .. code-block:: bash
 
+   mkdir -p sw2023_replication
+   unzip -o sw2023_replication.zip -d sw2023_replication
+   cd sw2023_replication
    python -m venv .venv
    source .venv/bin/activate
-   unzip sw2023_replication.zip
-   cp /path/to/sw2023-0.3.2.tar.gz .
    python -m pip install --upgrade pip setuptools wheel
    pip install -r requirements.txt
+   python -c "import sw2023; print(sw2023.__version__)"
 
-The first line of ``requirements.txt`` is ``./sw2023-0.3.2.tar.gz``, so the
-package itself is installed into the virtual environment together with
-``numpy``, ``scipy``, ``pandas``, and ``matplotlib``.
+The first line of ``requirements.txt`` is ``./sw2023-0.3.2.tar.gz``. The
+source tarball is included inside ``sw2023_replication.zip``, so the package
+itself is installed into the virtual environment together with ``numpy``,
+``scipy``, ``pandas``, and ``matplotlib``.
 
 Run
 ---
