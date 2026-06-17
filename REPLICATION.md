@@ -63,6 +63,26 @@ Confirm that `sw2023` is installed in the same Python environment:
 python3 -c "import sw2023; print(sw2023.__version__)"
 ```
 
+If this command reports `ModuleNotFoundError: No module named 'sw2023'`, the
+installation step did not complete in the Python environment used to run the
+script. Re-run the installation command from the folder containing
+`requirements.txt` and `sw2023-0.3.2.tar.gz`, and check the pip output for
+errors:
+
+```bash
+python3 -m pip install -r requirements.txt
+python3 -m pip show sw2023
+```
+
+For a clean isolated environment, use:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -r requirements.txt
+python3 -c "import sw2023; print(sw2023.__version__)"
+```
+
 The first line of `requirements.txt` installs the accompanying source tarball:
 
 ```text
