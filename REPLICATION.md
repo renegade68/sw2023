@@ -125,6 +125,11 @@ corresponding `_full.csv` files in full mode). The figure run writes the
 manuscript figure files (`fig_rotation_3d.*`, `fig_synthetic_comparison.*`,
 and `fig_norway_comparison.*`).
 
+For ease of comparison with the manuscript, the table log prints compact
+``Manuscript Table 1 ratio layout'' and ``Manuscript Table 2 ratio layout''
+blocks computed from the pre-computed CSV files. These are formatting summaries
+of the archived results, not new estimates.
+
 ---
 
 ## What the Script Reproduces

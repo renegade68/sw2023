@@ -115,6 +115,64 @@ from sw2023 import (SW2023Model, PanelSW2023,
 from sw2023.tests.monte_carlo import run_imse_grid, print_imse_comparison
 
 
+def _fmt_ratio(x):
+    return "   -" if pd.isna(x) else f"{x:5.2f}"
+
+
+def print_table1_manuscript_ratios(ref, ext):
+    """Print manuscript Table 1 ratio layout from pre-computed CSV files."""
+    rows = []
+    for p, q in [(1, 1), (1, 2), (2, 2), (2, 3), (3, 3)]:
+        src = ext if (p, q) in [(2, 3), (3, 3)] else ref
+        vals = []
+        for n in [100, 200, 400]:
+            hit = src[(src["p"] == p) & (src["q"] == q)
+                      & (src["n"] == n) & (src["rho"] == 0.0)
+                      & (src["ref_paper"].notna())]
+            ratio = np.nan
+            if not hit.empty:
+                row = hit.iloc[0]
+                ratio = row["imse_mean"] / row["ref_paper"]
+            vals.append(_fmt_ratio(ratio))
+        rows.append((f"({p},{q})", *vals))
+
+    print("\n-- Manuscript Table 1 ratio layout (sw2023 / SW2023 Table F.1) --")
+    print("  (p,q)    n=100   n=200   n=400")
+    print("  -------------------------------")
+    for row in rows:
+        print(f"  {row[0]:<7} {row[1]}   {row[2]}   {row[3]}")
+
+
+def print_table2_manuscript_ratios(scalar_ref, product_ref):
+    """Print manuscript Table 2 scalar/product ratio layout."""
+    rows = []
+    for p, q in [(1, 1), (2, 2)]:
+        vals = []
+        for n in [100, 200, 400]:
+            sval = scalar_ref[(scalar_ref["p"] == p) & (scalar_ref["q"] == q)
+                              & (scalar_ref["n"] == n)
+                              & (scalar_ref["rho"] == 0.0)
+                              & (scalar_ref["ref_paper"].notna())]
+            pval = product_ref[(product_ref["p"] == p) & (product_ref["q"] == q)
+                               & (product_ref["n"] == n)
+                               & (product_ref["rho"] == 0.0)
+                               & (product_ref["ref_paper"].notna())]
+            sr = np.nan
+            pr = np.nan
+            if not sval.empty:
+                sr = sval.iloc[0]["imse_mean"] / sval.iloc[0]["ref_paper"]
+            if not pval.empty:
+                pr = pval.iloc[0]["imse_mean"] / pval.iloc[0]["ref_paper"]
+            vals.append(f"{_fmt_ratio(sr).strip()} / {_fmt_ratio(pr).strip()}")
+        rows.append((f"({p},{q})", *vals))
+
+    print("\n-- Manuscript Table 2 ratio layout (scalar / product LOO-CV) --")
+    print("  (p,q)       n=100        n=200        n=400")
+    print("  --------------------------------------------")
+    for row in rows:
+        print(f"  {row[0]:<7} {row[1]:>10}   {row[2]:>10}   {row[3]:>10}")
+
+
 # =============================================================================
 # TABLES 1 & 2 — Monte Carlo Validation
 #
@@ -159,6 +217,7 @@ if RUN_TABLES:
         print(f"  [ERROR] Monte Carlo (scalar): {e}")
 
     # ── Pre-computed manuscript values (n_sims=100) ──────────────────────────
+    ref = None
     if os.path.exists(csv_scalar_ref):
         print("\n-- Table 1 manuscript values (pre-computed, n_sims=100) --")
         ref = pd.read_csv(csv_scalar_ref)
@@ -167,6 +226,7 @@ if RUN_TABLES:
         print(f"\n  [WARN] Pre-computed manuscript file not found: {csv_scalar_ref}")
 
     csv_extra_ref = os.path.join(HERE, "mc_imse_extra.csv")
+    ext = None
     if os.path.exists(csv_extra_ref):
         print("\n-- Table 1 extension values (pre-computed; rho=0 manuscript cells) --")
         ext = pd.read_csv(csv_extra_ref)
@@ -175,6 +235,9 @@ if RUN_TABLES:
         print(ext_rho0.to_string(index=False, float_format=lambda x: f"{x:.6g}"))
     else:
         print(f"\n  [WARN] Extra Monte Carlo file not found: {csv_extra_ref}")
+
+    if ref is not None and ext is not None:
+        print_table1_manuscript_ratios(ref, ext)
 
     # ── Table 2: Product LOO-CV ───────────────────────────────────────────────
     print("\n-- Fresh Monte Carlo check: product LOO-CV bandwidth --")
@@ -198,12 +261,16 @@ if RUN_TABLES:
     except Exception as e:
         print(f"  [ERROR] Monte Carlo (product): {e}")
 
+    prd = None
     if os.path.exists(csv_product_ref):
         print("\n-- Table 2 manuscript values (pre-computed, n_sims=100) --")
         prd = pd.read_csv(csv_product_ref)
         print(prd.to_string(index=False))
     else:
         print(f"\n  [WARN] Pre-computed manuscript file not found: {csv_product_ref}")
+
+    if ref is not None and prd is not None:
+        print_table2_manuscript_ratios(ref, prd)
 
 
 # =============================================================================
