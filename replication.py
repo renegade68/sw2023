@@ -36,8 +36,6 @@ Package versions used in the manuscript
 import sys
 import os
 import runpy
-import numpy as np
-import pandas as pd
 
 # ── Command-line flags ────────────────────────────────────────────────────────
 FULL    = "--full"    in sys.argv
@@ -59,7 +57,22 @@ print(f"  Figures : {'yes' if RUN_FIGURES else 'skipped (--tables)'}")
 print("=" * W)
 
 # ── Package versions ──────────────────────────────────────────────────────────
-import sw2023, scipy, matplotlib
+try:
+    import numpy as np
+    import pandas as pd
+    import sw2023, scipy, matplotlib
+except ModuleNotFoundError as e:
+    missing = e.name
+    print(f"\n[ERROR] Required package not found: {missing}")
+    print(f"Python executable: {sys.executable}")
+    print(f"Working directory: {os.getcwd()}")
+    print("\nInstall the submitted package and dependencies with:")
+    print("  python3 -m pip install -r requirements.txt")
+    print("\nThen verify the installation with:")
+    print("  python3 -c \"import sw2023; print(sw2023.__version__)\"")
+    print("\nIf your system uses `python` for Python 3, replace `python3` with `python`.")
+    raise SystemExit(1)
+
 print(f"\nsw2023      : {sw2023.__version__}")
 print(f"Python      : {sys.version.split()[0]}")
 print(f"numpy       : {np.__version__}")

@@ -57,6 +57,12 @@ throughout the commands below.
 python3 -m pip install -r requirements.txt
 ```
 
+Confirm that `sw2023` is installed in the same Python environment:
+
+```bash
+python3 -c "import sw2023; print(sw2023.__version__)"
+```
+
 The first line of `requirements.txt` installs the accompanying source tarball:
 
 ```text
