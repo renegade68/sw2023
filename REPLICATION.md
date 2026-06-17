@@ -43,8 +43,9 @@ file before installing the requirements.
 `requirements.txt`:
 
 ```bash
-unzip sw2023_replication.zip
-cd sw2023_replication  # if the archive was unpacked into a subdirectory
+mkdir -p sw2023_replication
+unzip -o sw2023_replication.zip -d sw2023_replication
+cd sw2023_replication
 ```
 
 If your system uses `python` for Python 3, replace `python3` with `python`
