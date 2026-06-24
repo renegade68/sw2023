@@ -8,8 +8,8 @@ Reproduces all numerical results and figures reported in the manuscript.
 
 Usage
 -----
-  python replication.py              # Quick mode  : Tables 1–4 + Figures
-  python replication.py --full       # Full mode   : Tables 1–4 + Figures
+  python replication.py              # Quick mode  : Tables 2–5 + Figures
+  python replication.py --full       # Full mode   : Tables 2–5 + Figures
   python replication.py --tables     # Tables only (skip figures)
   python replication.py --figures    # Figures only (skip Monte Carlo)
 
@@ -17,15 +17,22 @@ Runtime (approximate, single core)
 -----------------------------------
   Quick  (default) : < 10 minutes (fresh Monte Carlo check, n_sims=20)
   Full   (--full)  : ~ 60 minutes (fresh Monte Carlo check, n_sims=100)
+  Figures (--figures): Figure 3 refits the full Norway bandwidth comparison;
+                       the product LOO-CV fit can be substantially longer.
 
 Monte Carlo reproducibility
 ---------------------------
-  The manuscript Monte Carlo tables are reproduced from the accompanying
-  pre-computed CSV files (mc_imse_results.csv, mc_imse_extra.csv, and
-  mc_imse_product.csv).
-  The script also runs a fresh Monte Carlo check.  In quick mode this uses
-  n_sims=20 and writes *_quick.csv files; these stochastic check values are
-  not expected to match the manuscript tables cell by cell.
+  Full mode recomputes all manuscript Monte Carlo cells reported in Tables 2
+  and 3 with n_sims=100 and writes *_full.csv files. Quick mode uses n_sims=20
+  as a faster executable smoke check; these stochastic check values are not
+  expected to match the manuscript tables cell by cell.
+
+Figure reproducibility
+----------------------
+  Figure mode regenerates all manuscript figure files. Figure 3 first refits
+  the Norway cross-sectional models under Silverman, scalar LOO-CV, and product
+  LOO-CV bandwidths, then writes norway_loocv_comparison.csv as an output used
+  for plotting.
 
 Package versions used in the manuscript
 ----------------------------------------
@@ -119,16 +126,19 @@ def _fmt_ratio(x):
     return "   -" if pd.isna(x) else f"{x:5.2f}"
 
 
-def print_table1_manuscript_ratios(ref, ext):
-    """Print manuscript Table 2 ratio layout from pre-computed CSV files."""
+TABLE2_PQ = [(1, 1), (1, 2), (2, 2), (2, 3), (3, 3)]
+TABLE3_PQ = [(1, 1), (2, 2)]
+
+
+def print_table1_manuscript_ratios(table_df, label):
+    """Print manuscript Table 2 ratio layout from a Monte Carlo result table."""
     rows = []
-    for p, q in [(1, 1), (1, 2), (2, 2), (2, 3), (3, 3)]:
-        src = ext if (p, q) in [(2, 3), (3, 3)] else ref
+    for p, q in TABLE2_PQ:
         vals = []
         for n in [100, 200, 400]:
-            hit = src[(src["p"] == p) & (src["q"] == q)
-                      & (src["n"] == n) & (src["rho"] == 0.0)
-                      & (src["ref_paper"].notna())]
+            hit = table_df[(table_df["p"] == p) & (table_df["q"] == q)
+                           & (table_df["n"] == n) & (table_df["rho"] == 0.0)
+                           & (table_df["ref_paper"].notna())]
             ratio = np.nan
             if not hit.empty:
                 row = hit.iloc[0]
@@ -136,7 +146,7 @@ def print_table1_manuscript_ratios(ref, ext):
             vals.append(_fmt_ratio(ratio))
         rows.append((f"({p},{q})", *vals))
 
-    print("\n-- Manuscript Table 2 ratio layout (sw2023 / SW2023 Table F.1) --")
+    print(f"\n-- Manuscript Table 2 ratio layout ({label}) --")
     print("  (p,q)    n=100   n=200   n=400")
     print("  -------------------------------")
     for row in rows:
@@ -146,7 +156,7 @@ def print_table1_manuscript_ratios(ref, ext):
 def print_table2_manuscript_ratios(scalar_ref, product_ref):
     """Print manuscript Table 3 scalar/product ratio layout."""
     rows = []
-    for p, q in [(1, 1), (2, 2)]:
+    for p, q in TABLE3_PQ:
         vals = []
         for n in [100, 200, 400]:
             sval = scalar_ref[(scalar_ref["p"] == p) & (scalar_ref["q"] == q)
@@ -176,20 +186,19 @@ def print_table2_manuscript_ratios(scalar_ref, product_ref):
 # =============================================================================
 # TABLES 2 & 3 — Monte Carlo Validation
 #
-# Reproduces IMSE ratios relative to Simar & Wilson (2023) Table F.1.
-# Manuscript values are read from pre-computed CSV files.  Fresh quick/full
-# Monte Carlo checks are written to separate *_quick.csv or *_full.csv files.
+# Computes manuscript IMSE ratios relative to Simar & Wilson (2023) Table F.1.
+# Full mode recomputes every Monte Carlo cell reported in manuscript Tables 2
+# and 3. Quick mode uses the same table geometry with fewer replications.
 # =============================================================================
 if RUN_TABLES:
     print("\n" + "=" * W)
     print("Tables 2-3 — Monte Carlo Validation")
     print(f"  DGP   : Marsaglia (1972) sphere, sigma_eta=0.5")
-    print(f"  (p,q) : base scalar CSV covers (1,1), (1,2), (2,1), (2,2)")
-    print(f"          extra scalar CSV covers (2,3), (3,3) at rho=0")
+    print(f"  Table 2 scalar (p,q): {TABLE2_PQ}")
+    print(f"  Table 3 product (p,q): {TABLE3_PQ}")
     print(f"  n     : 100, 200, 400" + (", 800 in fresh full check" if FULL else ""))
     print(f"  Fresh run n_sims: {N_SIMS}"
-          + ("  [execution check; manuscript CSV uses n_sims=100]"
-             if not FULL else "  [manuscript-scale check]"))
+          + ("  [quick execution check]" if not FULL else "  [manuscript-scale validation]"))
     print("=" * W)
 
     n_list = [100, 200, 400, 800] if FULL else [100, 200, 400]
@@ -202,7 +211,7 @@ if RUN_TABLES:
         HERE, "mc_imse_results_full.csv" if FULL else "mc_imse_results_quick.csv")
     try:
         df_t1 = run_imse_grid(
-            pq_list=[(1,1), (1,2), (2,1), (2,2)],
+            pq_list=TABLE2_PQ,
             n_list=n_list,
             rho_list=[0.0],
             n_sims=N_SIMS,
@@ -213,31 +222,41 @@ if RUN_TABLES:
         print()
         print_imse_comparison(df_t1)
         print(f"\n  → Fresh check saved: {csv_scalar_run}")
+        print_table1_manuscript_ratios(
+            df_t1,
+            "fresh full run" if FULL else "fresh quick run; stochastic check",
+        )
     except Exception as e:
         print(f"  [ERROR] Monte Carlo (scalar): {e}")
 
-    # ── Pre-computed manuscript values (n_sims=100) ──────────────────────────
+    # ── Archived manuscript-scale values for comparison ──────────────────────
     ref = None
     if os.path.exists(csv_scalar_ref):
-        print("\n-- Manuscript Table 2 values (pre-computed, n_sims=100) --")
+        print("\n-- Archived Table 2 scalar values (n_sims=100; comparison copy) --")
         ref = pd.read_csv(csv_scalar_ref)
         print(ref.to_string(index=False))
     else:
-        print(f"\n  [WARN] Pre-computed manuscript file not found: {csv_scalar_ref}")
+        print(f"\n  [WARN] Archived manuscript-scale file not found: {csv_scalar_ref}")
 
     csv_extra_ref = os.path.join(HERE, "mc_imse_extra.csv")
     ext = None
     if os.path.exists(csv_extra_ref):
-        print("\n-- Manuscript Table 2 extension values (pre-computed; rho=0 manuscript cells) --")
+        print("\n-- Archived Table 2 extension values (n_sims=100; comparison copy) --")
         ext = pd.read_csv(csv_extra_ref)
         ext_rho0 = ext[(ext["rho"] == 0.0) & (ext["ref_paper"].notna())].copy()
         ext_rho0["ratio"] = ext_rho0["imse_mean"] / ext_rho0["ref_paper"]
         print(ext_rho0.to_string(index=False, float_format=lambda x: f"{x:.6g}"))
     else:
-        print(f"\n  [WARN] Extra Monte Carlo file not found: {csv_extra_ref}")
+        print(f"\n  [WARN] Archived extension file not found: {csv_extra_ref}")
 
     if ref is not None and ext is not None:
-        print_table1_manuscript_ratios(ref, ext)
+        archived_t2 = pd.concat([
+            ref[ref[["p", "q"]].apply(tuple, axis=1).isin(TABLE2_PQ)],
+            ext[(ext[["p", "q"]].apply(tuple, axis=1).isin([(2, 3), (3, 3)]))
+                & (ext["rho"] == 0.0)
+                & (ext["ref_paper"].notna())],
+        ], ignore_index=True)
+        print_table1_manuscript_ratios(archived_t2, "archived n_sims=100 comparison copy")
 
     # ── Manuscript Table 3: Product LOO-CV ────────────────────────────────────
     print("\n-- Fresh Monte Carlo check: product LOO-CV bandwidth --")
@@ -247,7 +266,7 @@ if RUN_TABLES:
         HERE, "mc_imse_product_full.csv" if FULL else "mc_imse_product_quick.csv")
     try:
         df_t2 = run_imse_grid(
-            pq_list=[(1,1), (1,2), (2,1), (2,2)],
+            pq_list=TABLE3_PQ,
             n_list=n_list,
             rho_list=[0.0],
             n_sims=N_SIMS,
@@ -263,11 +282,11 @@ if RUN_TABLES:
 
     prd = None
     if os.path.exists(csv_product_ref):
-        print("\n-- Manuscript Table 3 values (pre-computed, n_sims=100) --")
+        print("\n-- Archived Table 3 product values (n_sims=100; comparison copy) --")
         prd = pd.read_csv(csv_product_ref)
         print(prd.to_string(index=False))
     else:
-        print(f"\n  [WARN] Pre-computed manuscript file not found: {csv_product_ref}")
+        print(f"\n  [WARN] Archived comparison file not found: {csv_product_ref}")
 
     if ref is not None and prd is not None:
         print_table2_manuscript_ratios(ref, prd)
@@ -543,12 +562,42 @@ if RUN_FIGURES:
 
     # ── Figure 3: Norway data ─────────────────────────────────────────────────
     print("\n-- Figure 3: Norwegian agricultural panel --")
-    loocv_csv = os.path.join(HERE, "norway_loocv_comparison.csv")
-    if not os.path.exists(loocv_csv):
-        print(f"  [SKIP] {loocv_csv} not found.")
-        print("         This pre-computed file is required to reproduce fig_norway_comparison.")
+    data_path = os.path.join(HERE, "norway_for_python.csv")
+    if not os.path.exists(data_path):
+        print(f"  [SKIP] {data_path} not found.")
+        print("         Place norway_for_python.csv in the same directory as this script.")
     else:
-        df_fig2 = pd.read_csv(loocv_csv)
+        df_no = (pd.read_csv(data_path)
+                   .sort_values(["farmid", "year"])
+                   .reset_index(drop=True))
+        X_no = df_no[["x1","x2","x3","x4","x5","x6"]].values
+        Y_no = df_no[["y1","y2","y3","y4"]].values
+        firm_id = df_no["farmid"].values
+        time_id = df_no["year"].values
+
+        results_cs = {}
+        for bw in ["silverman", "loocv_scalar", "loocv"]:
+            print(f"  Fitting cross-sectional model: bandwidth={bw}")
+            m_bw = SW2023Model(X_no, Y_no, method="HMS", bandwidth_method=bw)
+            m_bw.fit(verbose=False)
+            results_cs[bw] = m_bw.efficiency_
+
+        print("  Fitting four-component panel model: bandwidth=silverman")
+        m_panel_fig = PanelSW2023(X_no, Y_no, firm_id, time_id, method="HMS")
+        m_panel_fig.fit(verbose=False)
+
+        df_fig2 = pd.DataFrame({
+            "year": time_id,
+            "farmid": firm_id,
+            "eff_silverman": results_cs["silverman"],
+            "eff_scalar": results_cs["loocv_scalar"],
+            "eff_product": results_cs["loocv"],
+            "TE_silverman": m_panel_fig.eff_transient_,
+            "PE_silverman": m_panel_fig.eff_persistent_,
+        })
+        loocv_csv = os.path.join(HERE, "norway_loocv_comparison.csv")
+        df_fig2.to_csv(loocv_csv, index=False)
+        print(f"  → Fresh Norway bandwidth comparison saved: {loocv_csv}")
 
         fig2, axes2 = plt.subplots(1, 2, figsize=(10, 4))
         labels_fig2 = {

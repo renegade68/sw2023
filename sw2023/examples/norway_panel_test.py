@@ -15,7 +15,9 @@ import time
 from sw2023 import SW2023Model, PanelSW2023
 
 # ── Load data ─────────────────────────────────────────────────────────────
-df = pd.read_stata('/Users/mac/Documents/msfa/sfbook_data/norway.dta')
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+DATA_PATH = os.path.join(ROOT, 'norway_for_python.csv')
+df = pd.read_csv(DATA_PATH)
 df = df.sort_values(['farmid', 'year']).reset_index(drop=True)
 
 input_vars  = ['x1', 'x2', 'x3', 'x4', 'x5', 'x6']

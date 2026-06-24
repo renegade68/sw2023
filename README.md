@@ -126,29 +126,29 @@ sw2023test y1 y2, inputs(x1 x2) reps(299)
 
 ## Replication
 
-The replication archive separates manuscript values from fresh execution
-checks:
+The replication script provides a quick execution check and a manuscript-scale
+Monte Carlo table validation:
 
 ```bash
-# Non-graphical check of manuscript tables and quoted values
+# Non-graphical quick check
 python replication.py --tables
 
 # Regenerate manuscript figures
 python replication.py --figures
 
-# Longer fresh Monte Carlo execution check (n_sims=100)
+# Manuscript-scale Monte Carlo table validation (n_sims=100)
 python replication.py --full --tables
 ```
 
-The manuscript Monte Carlo table is based on the archived `n_sims=100` CSV
-files: `mc_imse_results.csv`, `mc_imse_extra.csv`, and
-`mc_imse_product.csv`. These files support a focused validation against
-selected Simar & Wilson (2023) Table F.1 entries; they are not a full
-replication of the complete Monte Carlo appendix or the original authors'
-unreleased computational code. For the selected scalar LOO-CV validation
-cells reported in the manuscript, IMSE ratios range from 0.88 to 1.29 with
-median 1.02. Fresh quick/full runs are stochastic execution checks and need
-not exactly reproduce each archived Monte Carlo cell.
+The replication script recomputes the manuscript Monte Carlo validation cells
+in full mode. Archived CSV files (`mc_imse_results.csv`,
+`mc_imse_extra.csv`, and `mc_imse_product.csv`) are included as comparison
+copies. The exercise is a focused validation against selected Simar & Wilson
+(2023) Table F.1 entries; it is not a full replication of the complete Monte
+Carlo appendix or the original authors' unreleased computational code. For the
+selected scalar LOO-CV validation cells reported in the manuscript, IMSE ratios
+range from 0.88 to 1.29 with median 1.02. Quick mode is a stochastic smoke
+check and is not expected to match the manuscript table cells exactly.
 
 **Note on bootstrap reproducibility.** All bootstrap procedures
 (`bootstrap_sw`, `bootstrap_panel`, `test_r3_significance`) accept a `seed`

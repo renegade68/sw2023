@@ -5,7 +5,7 @@ Frontier Analysis in Python. *Journal of Statistical Software* (submitted).
 
 ---
 
-## Contents of This Archive
+## Contents of This Repository
 
 | File | Description |
 |---|---|
@@ -13,24 +13,22 @@ Frontier Analysis in Python. *Journal of Statistical Software* (submitted).
 | `replication.ipynb` | Replication notebook (Jupyter, inline outputs) |
 | `REPLICATION.md` | This file |
 | `requirements.txt` | Python package dependencies |
-| `sw2023-0.3.2.tar.gz` | Submitted source tarball installed by `requirements.txt` |
-| `mc_imse_results.csv` | Pre-computed Monte Carlo results — scalar LOO-CV (manuscript Table 2) |
-| `mc_imse_extra.csv` | Pre-computed scalar LOO-CV extension results for larger `(p,q)` settings |
-| `mc_imse_product.csv` | Pre-computed Monte Carlo results — product LOO-CV (manuscript Table 3) |
+| `mc_imse_results.csv` | Archived scalar LOO-CV Monte Carlo results for comparison |
+| `mc_imse_extra.csv` | Archived scalar LOO-CV extension results for comparison |
+| `mc_imse_product.csv` | Archived product LOO-CV Monte Carlo results for comparison |
 | `norway_for_python.csv` | Norwegian agricultural panel data (Section 7) |
-| `norway_loocv_comparison.csv` | Pre-computed Norway bandwidth comparison data used for Figure 3 |
 | `viz_rotation_3d.py` | Source script for the direction-vector rotation figure |
 
-The `sw2023` package source tarball (`sw2023-0.3.2.tar.gz`) is included in
-this replication archive and is also submitted separately.  It should remain in
-the same directory as `requirements.txt` before installing the requirements.
+For the journal submission archive, `requirements.txt` installs the submitted
+source tarball. In this GitHub repository, install the package from the checked
+out source tree as shown below.
 
 ---
 
 ## Requirements
 
 - Python >= 3.8
-- sw2023 0.3.2 (installed from the accompanying source tarball)
+- sw2023 0.3.2 (installed from this source tree)
 - numpy >= 1.21
 - scipy >= 1.7
 - pandas >= 1.3
@@ -40,17 +38,13 @@ the same directory as `requirements.txt` before installing the requirements.
 
 ## How to Run
 
-For operating-system-specific copy-and-paste commands, see the top-level
-`README_REPLICATION.txt` included with the submission archive. The commands
-below use a Unix-style shell (`python3`, `source`/`.` activation, and `unzip`).
+The commands below use a Unix-style shell (`python3` and `source`/`.`
+activation).
 
-**Step 1.** Unzip the replication archive and enter the folder that contains
-`requirements.txt`:
+**Step 1.** Clone or download this repository and enter the repository folder:
 
 ```bash
-mkdir -p sw2023_replication
-unzip -o sw2023_replication.zip -d sw2023_replication
-cd sw2023_replication
+cd github_sw2023
 ```
 
 If your system uses `python` for Python 3, replace `python3` with `python`
@@ -60,6 +54,7 @@ throughout the commands below.
 
 ```bash
 python3 -m pip install -r requirements.txt
+python3 -m pip install .
 ```
 
 Confirm that `sw2023` is installed in the same Python environment:
@@ -70,12 +65,12 @@ python3 -c "import sw2023; print(sw2023.__version__)"
 
 If this command reports `ModuleNotFoundError: No module named 'sw2023'`, the
 installation step did not complete in the Python environment used to run the
-script. Re-run the installation command from the folder containing
-`requirements.txt` and `sw2023-0.3.2.tar.gz`, and check the pip output for
-errors:
+script. Re-run the installation commands from the repository root and check the
+pip output for errors:
 
 ```bash
 python3 -m pip install -r requirements.txt
+python3 -m pip install .
 python3 -m pip show sw2023
 ```
 
@@ -85,38 +80,27 @@ For a clean isolated environment, use:
 python3 -m venv .venv
 . .venv/bin/activate
 python3 -m pip install -r requirements.txt
+python3 -m pip install .
 python3 -c "import sw2023; print(sw2023.__version__)"
-```
-
-The first line of `requirements.txt` installs the accompanying source tarball:
-
-```text
-./sw2023-0.3.2.tar.gz
-```
-
-If the tarball is not in the same directory, install it explicitly before
-running the replication script:
-
-```bash
-python3 -m pip install /path/to/sw2023-0.3.2.tar.gz
-python3 -m pip install -r requirements.txt
 ```
 
 **Step 3.** Run the script:
 
 ```bash
-# Quick verification — < 10 minutes (n_sims=20, n up to 400)
+# Quick executable check — < 10 minutes (n_sims=20, n up to 400)
 python3 replication.py
 
-# Longer fresh execution check — ~ 60 minutes (n_sims=100)
-python3 replication.py --full
-
-# Tables only (skip figure generation)
+# Manuscript-scale table validation — ~ 60 minutes (n_sims=100)
 python3 replication.py --full --tables
 
 # Figures only (skip Monte Carlo)
 python3 replication.py --figures
 ```
+
+The figure command regenerates all manuscript figure files. The Norwegian
+bandwidth-comparison figure is the slowest part because it refits the full
+Norway cross-sectional model under Silverman, scalar LOO-CV, and product
+LOO-CV bandwidths before writing `norway_loocv_comparison.csv` as an output.
 
 The script automatically writes a log file in the replication folder:
 
@@ -132,8 +116,9 @@ and `fig_norway_comparison.*`).
 
 For ease of comparison with the manuscript, the table log prints compact
 ``Manuscript Table 2 ratio layout'' and ``Manuscript Table 3 ratio layout''
-blocks computed from the pre-computed CSV files. These are formatting summaries
-of the archived results, not new estimates.
+blocks from the fresh run. In full mode these blocks are the manuscript-scale
+validation ratios relative to the published reference values. The archived CSV
+files are printed only as comparison copies.
 
 ---
 
@@ -141,29 +126,27 @@ of the archived results, not new estimates.
 
 ### Manuscript Tables 2 & 3 — Monte Carlo Validation (Section 5)
 
-The script reports two Monte Carlo outputs.  The Monte Carlo exercise is a
-focused implementation validation against selected published Table F.1 entries,
-not a full replication of the entire Simar and Wilson Monte Carlo appendix.
+The script recomputes the Monte Carlo cells reported in the manuscript. The
+Monte Carlo exercise is a focused implementation validation against selected
+published Table F.1 entries, not a full replication of the entire Simar and
+Wilson Monte Carlo appendix.
 
-First, it prints the pre-computed Monte Carlo results used in the manuscript
-(`n_sims=100`). These values are stored in the accompanying CSV files and
-allow exact reproduction of the numerical values reported in this manuscript.
-The original authors' computational code and optimizer settings were not
-publicly available, so the validation is based on the published mathematical
-specification and reference table values.
+By default, `python3 replication.py` runs a quick executable check with
+`n_sims=20` and writes `*_quick.csv` files. These quick-run values are
+stochastic checks of the code path and are not expected to match the manuscript
+tables cell by cell. For manuscript-scale validation, run
+`python3 replication.py --full --tables`; this recomputes the reported Monte
+Carlo cells with `n_sims=100` and writes `*_full.csv` files. The original
+authors' computational code, optimizer settings, tolerances, starting values,
+and exact random-number streams were not publicly available, so the validation
+is based on the published mathematical specification and reference table
+values rather than a bitwise replication of their computational
+implementation.
 
-Second, it performs a fresh Monte Carlo run as an executable check. By default
-this quick run uses `n_sims=20` and writes `*_quick.csv` files. These fresh
-quick-run values are stochastic checks of the code path and are not expected
-to match the manuscript tables cell by cell. Running `python3 replication.py
---full` performs a longer fresh check with `n_sims=100` and writes
-`*_full.csv` files.
-
-- **Manuscript Table 2** (`mc_imse_results.csv`, `mc_imse_extra.csv`): IMSE ratios
-  for scalar LOO-CV bandwidth, (p,q) ∈ {(1,1),(1,2),(2,2),(2,3),(3,3)},
-  n ∈ {100,200,400}, ρ = 0.
-- **Manuscript Table 3** (`mc_imse_product.csv`): Same configurations with product
-  LOO-CV bandwidth for (p,q) ∈ {(1,1),(2,2)} and ρ ∈ {0,0.5,1,2}.
+- **Manuscript Table 2**: scalar LOO-CV bandwidth, (p,q) in
+  {(1,1),(1,2),(2,2),(2,3),(3,3)}, n in {100,200,400}, rho = 0.
+- **Manuscript Table 3**: product LOO-CV bandwidth for (p,q) in
+  {(1,1),(2,2)} and rho = 0 for the compact manuscript comparison.
 
 ### Section 6 — Simulation-Based Illustration Code Outputs
 
@@ -212,8 +195,9 @@ Running `python3 replication.py --figures` reproduces the manuscript figures:
 - `fig_rotation_3d.pdf/png` from `viz_rotation_3d.py`.
 - `fig_synthetic_comparison.pdf/png` from the synthetic simulation in
   `replication.py`.
-- `fig_norway_comparison.pdf/png` from `norway_for_python.csv` and the
-  pre-computed `norway_loocv_comparison.csv`.
+- `fig_norway_comparison.pdf/png` from fresh fits to
+  `norway_for_python.csv`; the figure run writes
+  `norway_loocv_comparison.csv` as an output.
 
 ---
 

@@ -1,7 +1,8 @@
 """
 Test SW(2023) basic model on Norway agricultural panel data.
 
-Data: Kumbhakar, Wang & Horncastle (2015) textbook norway.dta
+Data: Kumbhakar, Wang & Horncastle (2015) Norway panel exported as
+      norway_for_python.csv in the repository root
   - 4 outputs: y1, y2, y3, y4
   - 6 inputs: x1 ~ x6
   - Panel: 460 farms x up to 9 years (1998-2006)
@@ -16,8 +17,9 @@ import pandas as pd
 from sw2023 import SW2023Model
 
 # ── Load data ────────────────────────────────────────────────────────────
-DATA_PATH = '/Users/mac/Documents/msfa/sfbook_data/norway.dta'
-df = pd.read_stata(DATA_PATH)
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+DATA_PATH = os.path.join(ROOT, 'norway_for_python.csv')
+df = pd.read_csv(DATA_PATH)
 
 print(f"Data size: {df.shape}")
 print(f"Farms: {df['farmid'].nunique()}, years: {df['year'].min()}~{df['year'].max()}")

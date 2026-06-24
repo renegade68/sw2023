@@ -20,8 +20,8 @@ Changelog
 - Updated online documentation and replication instructions for the
   self-contained replication archive, revised source tarball,
   ``requirements.txt`` installation workflow, Python 3.13 checks, manuscript
-  figure generation, and the distinction between pre-computed
-  focused-validation Monte Carlo values and fresh quick/full execution checks.
+  figure generation, manuscript-scale full Monte Carlo table validation, and
+  archived Monte Carlo comparison copies.
 
 0.3.1 (2025)
 ------------
